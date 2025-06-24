@@ -1,5 +1,4 @@
-// services.js - Core Business Logic with Supabase (vFinal)
-
+// services.js - Core Business Logic with Supabase
 import { appState } from './state.js';
 import { refreshUI, showToast } from './ui.js';
 import { supabase } from './supabaseClient.js';
@@ -17,7 +16,7 @@ export async function handleUpdateStock(productName, quantity) {
         const required = recipe[materialName] * quantity;
         const material = appState.materials.find(m => m.name === materialName);
         if (!material || material.currentStock < required) {
-            showToast(`Insufficient materials for ${quantity}x ${productName}.`, 'error');
+            showToast(`Insufficient materials for ${quantity}x ${productName}. Needed ${required} of ${materialName}, but only have ${material ? material.currentStock : 0}.`, 'error');
             return;
         }
         stockUpdates.push({
@@ -37,28 +36,29 @@ export async function handleUpdateStock(productName, quantity) {
             if (error) throw error;
         }
 
-        // CRITICAL: Add user_id to the production_log insert
         const { error: logError } = await supabase
             .from('production_log')
-            .insert({ product_name: productName, quantity: quantity, user_id: appState.user.id });
+            .insert({ product_name: productName, quantity: quantity });
         if (logError) throw logError;
 
-        // Optimistically update local state for immediate UI feedback
         for (const update of stockUpdates) {
             const material = appState.materials.find(m => m.id === update.id);
             if (material) material.currentStock = update.newStock;
         }
-        appState.productionLog.unshift({ productName, quantity, date: new Date().toISOString(), user_id: appState.user.id });
-        
+        appState.productionLog.unshift({ productName, quantity, date: new Date().toISOString() });
+
         refreshUI();
         showToast(`Produced ${quantity}x ${productName}.`, 'success');
         
-        const productCard = document.querySelector(`.dashboard-card[data-product-name="${productName}"]`);
-        if (productCard) productCard.querySelector('input').value = '0';
+        document.querySelectorAll('.dashboard-card').forEach(card => {
+            const h3 = card.querySelector('h3');
+            if (h3 && h3.textContent === productName) {
+                card.querySelector('input').value = '0';
+            }
+        });
 
     } catch (error) {
         showToast(`Production failed: ${error.message}`, 'error');
-        console.error("Production Error:", error);
     }
 }
 

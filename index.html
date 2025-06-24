@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Win Super Power - Factory Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- PDF & Charting Libraries -->
@@ -15,9 +14,9 @@
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="header fixed top-0 left-0 right-0 z-10 border-b">
+    <header class="header fixed top-0 left-0 right-0 z-20 border-b">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-primary flex items-center"><i class="fas fa-satellite-dish mr-2 text-accent-blue"></i>Win Super Power - Factory Dashboard</h1>
+            <h1 class="text-xl font-bold text-primary flex items-center"><i class="fas fa-satellite-dish mr-2 text-accent-blue"></i>Win Super Power</h1>
             <div class="flex items-center gap-4">
                 <div id="user-info" class="text-sm text-secondary hidden">
                     Logged in as: <span id="user-email" class="font-semibold text-primary"></span>
@@ -33,15 +32,15 @@
     <!-- Login Screen -->
     <div id="login-screen" class="fixed inset-0 bg-bg-dark flex items-center justify-center z-50">
         <div class="dashboard-card p-8 w-full max-w-sm">
-            <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+            <h2 class="text-2xl font-bold text-center mb-6">Factory Dashboard Login</h2>
             <form id="login-form">
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium text-secondary mb-1">Email</label>
-                    <input type="email" id="email" class="input-field w-full" required>
+                    <input type="email" id="email" class="input-field w-full" required autocomplete="email">
                 </div>
                 <div class="mb-6">
                     <label for="password" class="block text-sm font-medium text-secondary mb-1">Password</label>
-                    <input type="password" id="password" class="input-field w-full" required>
+                    <input type="password" id="password" class="input-field w-full" required autocomplete="current-password">
                 </div>
                 <button type="submit" class="btn btn-primary w-full">Sign In</button>
             </form>
@@ -57,7 +56,7 @@
     <!-- Main Content (Initially Hidden) -->
     <main id="main-content" class="container mx-auto px-4 pt-20 pb-8 opacity-0 transition-opacity duration-500 hidden">
         <!-- KPI Row -->
-        <div id="kpi-row" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+        <div id="kpi-row" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"></div>
 
         <!-- Chart Row -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
@@ -78,19 +77,19 @@
         <!-- Main Data Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-1">
-                <div class="dashboard-card p-6">
+                <div class="dashboard-card p-6 h-full">
                     <h2 class="text-lg font-semibold mb-4">Production Input</h2>
                     <div id="product-cards" class="space-y-4"></div>
                 </div>
             </div>
             <div class="lg:col-span-1">
-                <div class="dashboard-card p-6 flex flex-col">
+                <div class="dashboard-card p-6 flex flex-col h-full">
                     <h2 class="text-lg font-semibold mb-4">Material Inventory</h2>
                     <div id="material-cards" class="grid grid-cols-1 gap-4 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></div>
                 </div>
             </div>
             <div class="lg:col-span-1">
-                 <div class="dashboard-card p-6 flex flex-col">
+                 <div class="dashboard-card p-6 flex flex-col h-full">
                     <h2 class="text-lg font-semibold mb-4">Production Log</h2>
                     <ul id="production-log-list" class="space-y-3 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></ul>
                 </div>

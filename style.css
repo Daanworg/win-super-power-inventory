@@ -1,4 +1,4 @@
-/* style.css - Industrial Tech Theme v5.0 (with Loader) */
+/* style.css - Industrial Tech Theme vFinal */
 
 :root {
     --bg-dark: #1a202c;
@@ -62,13 +62,14 @@ main {
 }
 
 .btn { padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; transition: all 0.2s ease; text-align: center; border: 1px solid transparent; cursor: pointer; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn:active { transform: scale(0.97); }
 .btn-primary { background-color: var(--accent-blue); color: var(--bg-dark); }
-.btn-primary:hover { background-color: #63b3ed; }
+.btn-primary:hover:not(:disabled) { background-color: #63b3ed; }
 .btn-secondary { background-color: transparent; border-color: var(--accent-blue); color: var(--accent-blue); }
-.btn-secondary:hover { background-color: rgba(66, 153, 225, 0.1); }
+.btn-secondary:hover:not(:disabled) { background-color: rgba(66, 153, 225, 0.1); }
 .btn-danger { background-color: transparent; border-color: var(--accent-red); color: var(--accent-red); }
-.btn-danger:hover { background-color: rgba(245, 101, 101, 0.1); }
+.btn-danger:hover:not(:disabled) { background-color: rgba(245, 101, 101, 0.1); }
 
 .input-field { background-color: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; padding: 0.5rem 0.75rem; }
 .input-field:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); }

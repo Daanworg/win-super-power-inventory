@@ -1,16 +1,16 @@
-// state.js - Manages Application State with Supabase (vFinal-Simplified)
-
+// state.js - Manages Application State with Supabase
 import { supabase } from './supabaseClient.js';
-import { RECIPES_CONFIG } from './config.js';
+import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js';
 import { showToast } from './ui.js';
 
 export let appState = {
-    user: null,
+    user: null, // To store the logged-in user
     materials: [],
     productRecipes: RECIPES_CONFIG,
     productionLog: []
 };
 
+// Helper function to convert database material format to app format
 function dbMaterialToAppMaterial(dbMaterial) {
     return {
         id: dbMaterial.id,
@@ -21,28 +21,45 @@ function dbMaterialToAppMaterial(dbMaterial) {
     };
 }
 
+// Function to load initial application state from Supabase
 export async function loadInitialAppState() {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("User not authenticated.");
         appState.user = user;
 
-        // Fetch materials - The seeding is now done via SQL, so we just fetch.
         const { data: materials, error: materialsError } = await supabase
             .from('materials')
             .select('*')
             .order('name', { ascending: true });
         if (materialsError) throw materialsError;
 
-        // Fetch production log
         const { data: productionLog, error: logError } = await supabase
             .from('production_log')
             .select('*')
             .order('produced_at', { ascending: false })
-            .limit(100);
+            .limit(100); // Get latest 100 logs
         if (logError) throw logError;
 
-        appState.materials = materials.map(dbMaterialToAppMaterial);
+        // If no materials in DB, initialize from config (first time setup)
+        if (materials.length === 0 && MATERIALS_CONFIG.length > 0) {
+            showToast('No materials found. Initializing from config...', 'info');
+            const { data: insertedMaterials, error: insertError } = await supabase
+                .from('materials')
+                .insert(MATERIALS_CONFIG.map(m => ({
+                    name: m.name,
+                    unit: m.unit,
+                    current_stock: m.currentStock,
+                    reorder_point: m.reorderPoint
+                })))
+                .select();
+
+            if (insertError) throw insertError;
+            appState.materials = insertedMaterials.map(dbMaterialToAppMaterial);
+        } else {
+            appState.materials = materials.map(dbMaterialToAppMaterial);
+        }
+
         appState.productionLog = productionLog.map(log => ({
             id: log.id,
             productName: log.product_name,

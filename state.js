@@ -42,16 +42,21 @@ export async function loadInitialAppState() {
 
         if (materials.length === 0 && MATERIALS_CONFIG.length > 0) {
             showToast('No materials found. Initializing from config...', 'info');
+            
+            // This mapping is now correct for the new schema
+            const materialsToInsert = MATERIALS_CONFIG.map(m => ({
+                name: m.name,
+                unit: m.unit,
+                current_stock: m.currentStock,
+                reorder_point: m.reorderPoint
+            }));
+
             const { data: insertedMaterials, error: insertError } = await supabase
                 .from('materials')
-                .insert(MATERIALS_CONFIG.map(m => ({
-                    name: m.name,
-                    unit: m.unit,
-                    current_stock: m.currentStock,
-                    reorder_point: m.reorderPoint
-                })))
+                .insert(materialsToInsert)
                 .select();
             if (insertError) throw insertError;
+            
             appState.materials = insertedMaterials.map(dbMaterialToAppMaterial);
         } else {
             appState.materials = materials.map(dbMaterialToAppMaterial);

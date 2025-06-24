@@ -1,7 +1,7 @@
-// state.js - Manages Application State with Supabase (vFinal)
+// state.js - Manages Application State with Supabase (vFinal-Simplified)
 
 import { supabase } from './supabaseClient.js';
-import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js';
+import { RECIPES_CONFIG } from './config.js';
 import { showToast } from './ui.js';
 
 export let appState = {
@@ -27,12 +27,14 @@ export async function loadInitialAppState() {
         if (!user) throw new Error("User not authenticated.");
         appState.user = user;
 
+        // Fetch materials - The seeding is now done via SQL, so we just fetch.
         const { data: materials, error: materialsError } = await supabase
             .from('materials')
             .select('*')
             .order('name', { ascending: true });
         if (materialsError) throw materialsError;
 
+        // Fetch production log
         const { data: productionLog, error: logError } = await supabase
             .from('production_log')
             .select('*')
@@ -40,28 +42,7 @@ export async function loadInitialAppState() {
             .limit(100);
         if (logError) throw logError;
 
-        if (materials.length === 0 && MATERIALS_CONFIG.length > 0) {
-            showToast('No materials found. Initializing from config...', 'info');
-            
-            // This mapping is now correct for the new schema
-            const materialsToInsert = MATERIALS_CONFIG.map(m => ({
-                name: m.name,
-                unit: m.unit,
-                current_stock: m.currentStock,
-                reorder_point: m.reorderPoint
-            }));
-
-            const { data: insertedMaterials, error: insertError } = await supabase
-                .from('materials')
-                .insert(materialsToInsert)
-                .select();
-            if (insertError) throw insertError;
-            
-            appState.materials = insertedMaterials.map(dbMaterialToAppMaterial);
-        } else {
-            appState.materials = materials.map(dbMaterialToAppMaterial);
-        }
-
+        appState.materials = materials.map(dbMaterialToAppMaterial);
         appState.productionLog = productionLog.map(log => ({
             id: log.id,
             productName: log.product_name,

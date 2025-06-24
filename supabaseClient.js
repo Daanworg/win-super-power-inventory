@@ -1,10 +1,18 @@
-// supabaseClient.js - Initializes and exports the Supabase client
+// supabaseClient.js - SECURE VERSION FOR GITHUB
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Your new Supabase Project URL and Public Anon Key
-const SUPABASE_URL = 'https://fyaikvhafxodkswnzbtd.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5YWlrdmhhZnhvZGtzd256YnRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDAxODUsImV4cCI6MjA2NjI3NjE4NX0.LWPp2pVVjdUFc8I2g8qpquk3deGHyvNmYzpMog_wBR0';
+// These are unique placeholders. Vercel will replace these during deployment.
+const SUPABASE_URL = "__VERCEL_ENV_SUPABASE_URL__";
+const SUPABASE_ANON_KEY = "__VERCEL_ENV_SUPABASE_ANON_KEY__";
+
+// A small check for developers. If this runs in the browser with placeholders, something is wrong.
+if (SUPABASE_URL.startsWith("__VERCEL_ENV_")) {
+    console.error(
+        "CRITICAL: Supabase credentials are not being replaced during deployment. " +
+        "Ensure your Vercel build command is correctly running the placeholder replacement script."
+    );
+}
 
 // Create and export the Supabase client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

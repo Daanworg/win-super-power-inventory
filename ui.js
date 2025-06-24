@@ -1,18 +1,15 @@
-// ui.js - Renders all UI components (Corrected Chart Logic)
+// ui.js - Renders all UI components (vFinal)
 
 import { appState } from './state.js';
 import { attachAllListeners } from './events.js';
 import { getMonthlyProductionSummary, getMonthlyMaterialUsage } from './reportService.js';
 
-// Chart instances to prevent re-creation
 let productionChart = null;
 let inventoryChart = null;
 
-// Set Chart.js defaults for our dark theme
 Chart.defaults.color = 'hsl(210, 14%, 66%)';
 Chart.defaults.borderColor = 'hsl(220, 13%, 30%)';
 
-// Master function to update the entire UI
 export function refreshUI() {
     renderKpiCards();
     renderCharts();
@@ -55,21 +52,18 @@ function animateValue(element, start, end, duration, prefix = '', suffix = '') {
 function renderKpiCards() {
     const kpiRow = document.getElementById('kpi-row');
     if (!kpiRow) return;
-
     const totalStockItems = appState.materials.reduce((sum, mat) => sum + mat.currentStock, 0);
     const itemsBelowReorder = appState.materials.filter(m => m.currentStock <= m.reorderPoint).length;
     const oneMonthAgo = new Date(new Date().setMonth(new Date().getMonth() - 1));
     const unitsProducedMonth = appState.productionLog
         .filter(entry => new Date(entry.date) > oneMonthAgo && entry.productName === 'COMPLETE ANTENNA UNIT')
         .reduce((sum, entry) => sum + entry.quantity, 0);
-
     const kpis = [
         { id: 'kpi-stock', label: 'Total Stock Items', value: totalStockItems, suffix: ' pcs', color: 'var(--accent-green)' },
         { id: 'kpi-units', label: 'Units Produced (Month)', value: unitsProducedMonth, suffix: '', color: 'var(--accent-blue)' },
         { id: 'kpi-reorder', label: 'Items Below Reorder', value: itemsBelowReorder, suffix: '', color: 'var(--accent-yellow)' },
         { id: 'kpi-materials', label: 'Materials to Order', value: itemsBelowReorder, suffix: '', color: 'var(--accent-red)' }
     ];
-
     kpiRow.innerHTML = kpis.map((kpi, index) => `
         <div class="dashboard-card p-4 flex items-center">
             <div class="kpi-icon-wrapper mr-4" style="background-color: ${kpi.color}20; color: ${kpi.color};">
@@ -81,7 +75,6 @@ function renderKpiCards() {
             </div>
         </div>
     `).join('');
-
     kpis.forEach((kpi, index) => {
         const element = document.getElementById(`${kpi.id}-${index}`);
         if (element) {
@@ -98,12 +91,9 @@ function renderCharts() {
 function renderProductionHistoryChart() {
     const ctx = document.getElementById('production-history-chart')?.getContext('2d');
     if (!ctx) return;
-
-    // --- FIX: Destroy the old chart instance before creating a new one ---
     if (productionChart) {
         productionChart.destroy();
     }
-    
     const labels = [];
     const data = [];
     for (let i = 6; i >= 0; i--) {
@@ -115,14 +105,13 @@ function renderProductionHistoryChart() {
             .reduce((sum, entry) => sum + entry.quantity, 0);
         data.push(totalProduced);
     }
-    
     productionChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels,
             datasets: [{
                 label: 'Complete Units Produced',
-                data: data,
+                data,
                 backgroundColor: 'rgba(66, 153, 225, 0.5)',
                 borderColor: 'rgba(66, 153, 225, 1)',
                 borderWidth: 1,
@@ -144,29 +133,24 @@ function renderProductionHistoryChart() {
 function renderInventoryStatusChart() {
     const ctx = document.getElementById('inventory-status-chart')?.getContext('2d');
     if (!ctx) return;
-
-    // --- FIX: Destroy the old chart instance before creating a new one ---
     if (inventoryChart) {
         inventoryChart.destroy();
     }
-
     let okCount = 0, warningCount = 0, criticalCount = 0;
     appState.materials.forEach(m => {
         if (m.currentStock <= m.reorderPoint) criticalCount++;
         else if (m.currentStock <= m.reorderPoint * 1.5) warningCount++;
         else okCount++;
     });
-
     const data = {
         labels: ['OK', 'Warning', 'Critical'],
         datasets: [{
             data: [okCount, warningCount, criticalCount],
-            backgroundColor: [ 'hsla(145, 63%, 49%, 0.7)', 'hsla(50, 91%, 64%, 0.7)', 'hsla(0, 89%, 69%, 0.7)' ],
+            backgroundColor: ['hsla(145, 63%, 49%, 0.7)', 'hsla(50, 91%, 64%, 0.7)', 'hsla(0, 89%, 69%, 0.7)'],
             borderColor: 'hsl(220, 26%, 18%)',
             borderWidth: 2
         }]
     };
-
     inventoryChart = new Chart(ctx, {
         type: 'doughnut',
         data: data,
@@ -295,7 +279,7 @@ export function renderCustomPOModal(materials) {
         const suggestedQty = Math.max(1, (material.reorderPoint * 2) - material.currentStock);
         return `
              <div class="po-item-row" data-material-name="${material.name}">
-                 <input type="checkbox" class="po-item-select form-checkbox h-5 w-5 rounded bg-dark border-border-color text-accent-blue focus:ring-accent-blue">
+                 <input type="checkbox" class="po-item-select form-checkbox h-5 w-5 rounded bg-dark border-border-color text-accent-blue focus:ring-accent-blue" checked>
                  <div>
                      <span class="font-semibold">${material.name}</span>
                      <span class="text-xs text-secondary block">Stock: ${material.currentStock} | Reorder: ${material.reorderPoint}</span>

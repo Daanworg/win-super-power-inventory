@@ -1,10 +1,8 @@
-// supabaseClient.js - Initializes and exports the Supabase client
-
+// supabaseClient.js
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Your new Supabase Project URL and Public Anon Key
-const SUPABASE_URL = 'https://fyaikvhafxodkswnzbtd.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ5YWlrdmhhZnhvZGtzd256YnRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDAxODUsImV4cCI6MjA2NjI3NjE4NX0.LWPp2pVVjdUFc8I2g8qpquk3deGHyvNmYzpMog_wBR0';
+// Your actual Supabase Project URL and Public Key
+const SUPABASE_URL = 'https://rhbgtnfkjbgsquakrrtr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJoYmd0bmZramJnc3F1YWtycnRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2NTIxNTcsImV4cCI6MjA2NjIyODE1N30.r7cBZdTlr9vtQb6z8AhD9naqXIsiu9blRLbfxjyiM0g';
 
-// Create and export the Supabase client
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);

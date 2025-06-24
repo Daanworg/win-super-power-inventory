@@ -1,4 +1,4 @@
-// main.js - Application Entry Point (vFinal)
+// main.js - Application Entry Point (vFinal with Loader Fix)
 
 import { loadInitialAppState, appState } from './state.js';
 import { refreshUI } from './ui.js';
@@ -21,20 +21,19 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
         appState.user = session.user;
 
-        // 1. Show loader, hide login screen
+        // 1. Show loader, hide everything else
         loginScreen.classList.add('hidden');
+        mainContent.classList.add('hidden');
         loader.classList.remove('hidden');
-        loader.classList.add('flex'); // Use flex to center content
-        mainContent.classList.add('hidden'); // Ensure main content is hidden during load
+        loader.classList.add('flex');
 
         // 2. Load all data from the database
         const loadedSuccessfully = await loadInitialAppState();
         
-        // 3. Once data is loaded, update the UI
+        // 3. If data loaded, update the UI and show the main content
         if (loadedSuccessfully) {
             refreshUI();
             
-            // 4. Show the main content and hide the loader
             mainContent.classList.remove('hidden');
             footer.classList.remove('hidden');
             userInfo.classList.remove('hidden');
@@ -44,14 +43,13 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             
             // Fade in the main content for a smooth transition
             setTimeout(() => mainContent.classList.remove('opacity-0'), 50);
-
         } else {
-            // Handle case where data loading fails
-            alert('Failed to load factory data. Please try again.');
+            // If data loading fails, sign out to return to a clean login state
+            alert('Failed to load factory data. Please try logging in again.');
             await supabase.auth.signOut();
         }
 
-        // 5. Hide loader
+        // 4. CRITICAL FIX: Hide loader AFTER the process is complete, success or fail.
         loader.classList.add('hidden');
         loader.classList.remove('flex');
 

@@ -7,8 +7,8 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // The Vercel Environment Variables should be named:
 // VERCEL_PUBLIC_SUPABASE_URL
 // VERCEL_PUBLIC_SUPABASE_ANON_KEY
-const SUPABASE_URL = "YOUR_VERCEL_SUPABASE_URL_PLACEHOLDER";
-const SUPABASE_ANON_KEY = "YOUR_VERCEL_SUPABASE_ANON_KEY_PLACEHOLDER";
+const SUPABASE_URL = "VERCEL_PUBLIC_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "VERCEL_PUBLIC_SUPABASE_ANON_KEY";
 
 // A small check for developers. If this runs in the browser with placeholders, something is wrong.
 if (SUPABASE_URL === "YOUR_VERCEL_SUPABASE_URL_PLACEHOLDER" || SUPABASE_ANON_KEY === "YOUR_VERCEL_SUPABASE_ANON_KEY_PLACEHOLDER") {

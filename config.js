@@ -1,4 +1,4 @@
-// config.js - FACTORY CONFIGURATION FILE - v4.0 (Zero Initial Stock, No Max)
+// config.js - FACTORY CONFIGURATION FILE - vFinal (No Cost)
 
 export const MATERIALS_CONFIG = [
   // Frame Materials
@@ -13,13 +13,10 @@ export const MATERIALS_CONFIG = [
   { name: "15cm Round Tube 5/8 MF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "5/8 x 4 CSK Screw", unit: "pcs", currentStock: 0, reorderPoint: 100 },
   { name: "3/8 x 4 Screw", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-
-  // Wire/Connector Materials
+  // ... and so on for all your materials, ensuring no `costPerUnit` field exists.
   { name: "16 1/2 Ygr Wire", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "F-Connector Male (4005)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
   { name: "F-Connector Female (2002)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-
-  // Booster Materials
   { name: "Macking Coil", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Coil 28gsm (25cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Coil 26gsm (16cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
@@ -39,16 +36,12 @@ export const MATERIALS_CONFIG = [
   { name: "Capacitor 25v 100uF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Capacitor 25v 220uF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Transistor (2355)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  
-  // Power Supply Materials
   { name: "Plastic Box (Power)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Transformer", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "IN4007 Diode", unit: "pcs", currentStock: 0, reorderPoint: 200 },
   { name: "5C 2V Wire 3-yard", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "4-Antenna Jack", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "AC Cord", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-
-  // Packing Materials
   { name: "Packing Bag", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Warranty Card", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Round Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50 },
@@ -56,6 +49,7 @@ export const MATERIALS_CONFIG = [
   { name: "Box Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50 }
 ];
 
+// This part remains the same
 const subAssemblyRecipes = {
   "Antenna Frame Assembly": { "5/32 x 3/4 Tube": 1, "1/8 x 1/2 Tube": 8, "1/8 x 3/4 Tube": 2, "End Knob Round": 6, "End Knob Square 1/2x1/2": 2, "Dipole (CI Cup)": 1, "U-Clip": 1, "12cm Round Tube 7/8 MF": 2, "15cm Round Tube 5/8 MF": 1, "5/8 x 4 CSK Screw": 2 },
   "Booster Assembly": { "Macking Coil": 1, "Coil 28gsm (25cm)": 1, "Coil 26gsm (16cm)": 2, "Resistor 1k": 1, "LED Multicolour": 1, "PF 12": 1, "PF 39": 2, "PF 102 Indian": 1, "PF 102 Normal": 2, "Resistor 100-ohm": 1, "Resistor 68k": 2, "Resistor 2k": 1, "Resistor 150-R": 1, "Capacitor 25v 100uF": 1, "F-Connector Female (2002)": 1, "Transistor (2355)": 2 },
@@ -73,7 +67,6 @@ function generateCompleteUnitRecipe(recipes) {
         recipes["Wire Assembly"],
         recipes["Packaging Set"]
     ];
-
     for (const assembly of componentAssemblies) {
         for (const material in assembly) {
             if (completeRecipe[material]) {

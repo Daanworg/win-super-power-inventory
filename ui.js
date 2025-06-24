@@ -1,22 +1,25 @@
-// ui.js - Renders all UI components
+// ui.js - Renders all UI components (Corrected Chart Logic)
 
 import { appState } from './state.js';
 import { attachAllListeners } from './events.js';
 import { getMonthlyProductionSummary, getMonthlyMaterialUsage } from './reportService.js';
 
+// Chart instances to prevent re-creation
 let productionChart = null;
 let inventoryChart = null;
 
+// Set Chart.js defaults for our dark theme
 Chart.defaults.color = 'hsl(210, 14%, 66%)';
 Chart.defaults.borderColor = 'hsl(220, 13%, 30%)';
 
+// Master function to update the entire UI
 export function refreshUI() {
     renderKpiCards();
     renderCharts();
     renderProductInputs();
     renderInventory();
     renderProductionLog();
-    renderModals(); 
+    renderModals();
     renderReorderList();
     attachAllListeners();
 }
@@ -96,6 +99,11 @@ function renderProductionHistoryChart() {
     const ctx = document.getElementById('production-history-chart')?.getContext('2d');
     if (!ctx) return;
 
+    // --- FIX: Destroy the old chart instance before creating a new one ---
+    if (productionChart) {
+        productionChart.destroy();
+    }
+    
     const labels = [];
     const data = [];
     for (let i = 6; i >= 0; i--) {
@@ -108,40 +116,39 @@ function renderProductionHistoryChart() {
         data.push(totalProduced);
     }
     
-    if (productionChart) {
-        productionChart.data.labels = labels;
-        productionChart.data.datasets[0].data = data;
-        productionChart.update();
-    } else {
-        productionChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Complete Units Produced',
-                    data: data,
-                    backgroundColor: 'rgba(66, 153, 225, 0.5)',
-                    borderColor: 'rgba(66, 153, 225, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'hsl(220, 13%, 30%)' } },
-                    x: { grid: { display: false } }
-                }
+    productionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Complete Units Produced',
+                data: data,
+                backgroundColor: 'rgba(66, 153, 225, 0.5)',
+                borderColor: 'rgba(66, 153, 225, 1)',
+                borderWidth: 1,
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'hsl(220, 13%, 30%)' } },
+                x: { grid: { display: false } }
             }
-        });
-    }
+        }
+    });
 }
 
 function renderInventoryStatusChart() {
     const ctx = document.getElementById('inventory-status-chart')?.getContext('2d');
     if (!ctx) return;
+
+    // --- FIX: Destroy the old chart instance before creating a new one ---
+    if (inventoryChart) {
+        inventoryChart.destroy();
+    }
 
     let okCount = 0, warningCount = 0, criticalCount = 0;
     appState.materials.forEach(m => {
@@ -160,20 +167,15 @@ function renderInventoryStatusChart() {
         }]
     };
 
-    if (inventoryChart) {
-        inventoryChart.data.datasets[0].data = [okCount, warningCount, criticalCount];
-        inventoryChart.update();
-    } else {
-        inventoryChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: data,
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'top', labels: { color: 'hsl(210, 14%, 66%)' } } }
-            }
-        });
-    }
+    inventoryChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { color: 'hsl(210, 14%, 66%)' } } }
+        }
+    });
 }
 
 function renderModals() {
@@ -228,29 +230,27 @@ function renderInventory() {
     appState.materials.forEach(material => {
         const safeStockLevel = material.reorderPoint * 2;
         const stockPercentage = Math.min((material.currentStock / safeStockLevel) * 100, 100);
-        
         let statusColor = 'var(--accent-green)';
-        if (material.currentStock <= material.reorderPoint * 1.5) statusColor = 'var(--accent-yellow)'; 
+        if (material.currentStock <= material.reorderPoint * 1.5) statusColor = 'var(--accent-yellow)';
         if (material.currentStock <= material.reorderPoint) statusColor = 'var(--accent-red)';
-        
         const cardHTML = `
-            <div class="dashboard-card p-4 border-l-4" style="border-left-color: ${statusColor}" data-material-name="${material.name}">
-                <div class="flex justify-between items-start mb-1">
-                    <h3 class="font-medium text-sm">${material.name}</h3>
-                    <div class="text-xs text-secondary flex items-center gap-3">
-                        <i class="fas fa-plus-circle icon-btn restock-icon" title="Restock"></i>
-                        <i class="fas fa-edit icon-btn edit-current-stock" title="Set Current Stock"></i>
-                    </div>
-                </div>
-                <div class="flex justify-between items-baseline mb-2">
-                    <div class="text-2xl font-bold current-stock-value">${material.currentStock}</div>
-                    <span class="text-sm text-secondary">${material.unit}</span>
-                </div>
-                <div class="w-full bg-dark rounded-full h-1.5">
-                    <div class="h-1.5 rounded-full" style="width: ${stockPercentage}%; background-color: ${statusColor};"></div>
-                </div>
-                <div class="restock-form mt-2 hidden"></div>
-            </div>`;
+             <div class="dashboard-card p-4 border-l-4" style="border-left-color: ${statusColor}" data-material-name="${material.name}">
+                 <div class="flex justify-between items-start mb-1">
+                     <h3 class="font-medium text-sm">${material.name}</h3>
+                     <div class="text-xs text-secondary flex items-center gap-3">
+                         <i class="fas fa-plus-circle icon-btn restock-icon" title="Restock"></i>
+                         <i class="fas fa-edit icon-btn edit-current-stock" title="Set Current Stock"></i>
+                     </div>
+                 </div>
+                 <div class="flex justify-between items-baseline mb-2">
+                     <div class="text-2xl font-bold current-stock-value">${material.currentStock}</div>
+                     <span class="text-sm text-secondary">${material.unit}</span>
+                 </div>
+                 <div class="w-full bg-dark rounded-full h-1.5">
+                     <div class="h-1.5 rounded-full" style="width: ${stockPercentage}%; background-color: ${statusColor};"></div>
+                 </div>
+                 <div class="restock-form mt-2 hidden"></div>
+             </div>`;
         container.insertAdjacentHTML('beforeend', cardHTML);
     });
 }
@@ -262,7 +262,7 @@ function renderProductionLog() {
     if (appState.productionLog.length === 0) { list.innerHTML = `<li class="text-secondary text-center pt-4">No production recorded yet.</li>`; return; }
     [...appState.productionLog].reverse().forEach(entry => {
         const date = new Date(entry.date);
-        const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
         const logHTML = `<li class="p-2 border-b border-border-color flex justify-between items-center text-sm"><div><span class="font-semibold text-accent-blue">${entry.quantity}x</span> <span class="text-primary">${entry.productName}</span></div><span class="text-xs text-secondary">${formattedDate}</span></li>`;
         list.insertAdjacentHTML('beforeend', logHTML);
     });
@@ -272,20 +272,15 @@ function renderReorderList() {
     const list = document.getElementById('reorder-list');
     const header = document.getElementById('reorder-header');
     if (!list || !header) return;
-    
     list.innerHTML = '';
     header.querySelector('#open-po-modal-btn')?.remove();
-
     const itemsToReorder = appState.materials.filter(m => m.currentStock <= m.reorderPoint * 1.5);
-
     if (itemsToReorder.length === 0) {
         list.innerHTML = `<li class="text-secondary text-center pt-4">All stock levels are healthy.</li>`;
         return;
     }
-
     const poButton = `<button id="open-po-modal-btn" class="btn btn-secondary text-sm">Create Purchase Order</button>`;
     header.insertAdjacentHTML('beforeend', poButton);
-
     itemsToReorder.forEach(item => {
         const needed = Math.max(1, (item.reorderPoint * 2) - item.currentStock);
         const itemHTML = `<li class="p-3 rounded-md text-sm flex justify-between items-center" style="background-color: ${item.currentStock <= item.reorderPoint ? '#f5656520' : '#f6e05e20'};"><div class="flex-grow"><span class="font-semibold">${item.name}</span><span class="text-xs text-secondary block">Stock: ${item.currentStock} / Reorder at: ${item.reorderPoint}</span></div><div class="text-right"><span class="font-bold">Suggests ${needed}</span><span class="text-xs text-secondary ml-1">${item.unit}</span></div></li>`;
@@ -296,40 +291,37 @@ function renderReorderList() {
 export function renderCustomPOModal(materials) {
     const modal = document.getElementById('custom-po-modal');
     if (!modal) return;
-
     const materialRows = materials.map(material => {
         const suggestedQty = Math.max(1, (material.reorderPoint * 2) - material.currentStock);
         return `
-            <div class="po-item-row" data-material-name="${material.name}">
-                <input type="checkbox" class="po-item-select form-checkbox h-5 w-5 rounded bg-dark border-border-color text-accent-blue focus:ring-accent-blue">
-                <div>
-                    <span class="font-semibold">${material.name}</span>
-                    <span class="text-xs text-secondary block">Stock: ${material.currentStock} | Reorder: ${material.reorderPoint}</span>
-                </div>
-                <input type="number" class="po-item-qty input-field w-24 text-right" value="${suggestedQty}" min="0">
-            </div>
-        `;
+             <div class="po-item-row" data-material-name="${material.name}">
+                 <input type="checkbox" class="po-item-select form-checkbox h-5 w-5 rounded bg-dark border-border-color text-accent-blue focus:ring-accent-blue">
+                 <div>
+                     <span class="font-semibold">${material.name}</span>
+                     <span class="text-xs text-secondary block">Stock: ${material.currentStock} | Reorder: ${material.reorderPoint}</span>
+                 </div>
+                 <input type="number" class="po-item-qty input-field w-24 text-right" value="${suggestedQty}" min="0">
+             </div>
+         `;
     }).join('');
-
     modal.innerHTML = `
-        <div class="modal-content dashboard-card p-6 max-w-3xl w-full mx-4 flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold">Create Custom Purchase Order</h3>
-                <button id="cancel-po-btn" class="text-secondary hover:text-primary text-2xl">×</button>
-            </div>
-            <div class="mb-4">
-                <label for="supplier-name" class="block text-sm font-medium text-secondary mb-1">Supplier Name (Optional)</label>
-                <input type="text" id="supplier-name" class="input-field w-full" placeholder="Enter supplier name...">
-            </div>
-            <div id="po-item-list" class="flex-grow overflow-y-auto pr-2" style="max-height: 40vh;">
-                ${materialRows}
-            </div>
-            <div class="flex justify-end space-x-2 mt-6">
-                <button id="cancel-po-btn-footer" class="btn btn-secondary">Cancel</button>
-                <button id="confirm-po-generation-btn" class="btn btn-primary">Generate PO PDF</button>
-            </div>
-        </div>
-    `;
-
+         <div class="modal-content dashboard-card p-6 max-w-3xl w-full mx-4 flex flex-col">
+             <div class="flex justify-between items-center mb-4">
+                 <h3 class="text-lg font-semibold">Create Custom Purchase Order</h3>
+                 <button id="cancel-po-btn" class="text-secondary hover:text-primary text-2xl">×</button>
+             </div>
+             <div class="mb-4">
+                 <label for="supplier-name" class="block text-sm font-medium text-secondary mb-1">Supplier Name (Optional)</label>
+                 <input type="text" id="supplier-name" class="input-field w-full" placeholder="Enter supplier name...">
+             </div>
+             <div id="po-item-list" class="flex-grow overflow-y-auto pr-2" style="max-height: 40vh;">
+                 ${materialRows}
+             </div>
+             <div class="flex justify-end space-x-2 mt-6">
+                 <button id="cancel-po-btn-footer" class="btn btn-secondary">Cancel</button>
+                 <button id="confirm-po-generation-btn" class="btn btn-primary">Generate PO PDF</button>
+             </div>
+         </div>
+     `;
     modal.classList.remove('hidden');
 }

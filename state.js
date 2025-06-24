@@ -1,16 +1,16 @@
-// state.js - Manages Application State with Supabase
+// state.js - Manages Application State with Supabase (vFinal)
+
 import { supabase } from './supabaseClient.js';
 import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js';
 import { showToast } from './ui.js';
 
 export let appState = {
-    user: null, // To store the logged-in user
+    user: null,
     materials: [],
     productRecipes: RECIPES_CONFIG,
     productionLog: []
 };
 
-// Helper function to convert database material format to app format
 function dbMaterialToAppMaterial(dbMaterial) {
     return {
         id: dbMaterial.id,
@@ -21,7 +21,6 @@ function dbMaterialToAppMaterial(dbMaterial) {
     };
 }
 
-// Function to load initial application state from Supabase
 export async function loadInitialAppState() {
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -38,10 +37,9 @@ export async function loadInitialAppState() {
             .from('production_log')
             .select('*')
             .order('produced_at', { ascending: false })
-            .limit(100); // Get latest 100 logs
+            .limit(100);
         if (logError) throw logError;
 
-        // If no materials in DB, initialize from config (first time setup)
         if (materials.length === 0 && MATERIALS_CONFIG.length > 0) {
             showToast('No materials found. Initializing from config...', 'info');
             const { data: insertedMaterials, error: insertError } = await supabase
@@ -53,7 +51,6 @@ export async function loadInitialAppState() {
                     reorder_point: m.reorderPoint
                 })))
                 .select();
-
             if (insertError) throw insertError;
             appState.materials = insertedMaterials.map(dbMaterialToAppMaterial);
         } else {

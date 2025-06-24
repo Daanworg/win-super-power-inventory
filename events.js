@@ -1,6 +1,5 @@
-// events.js - Manages all event listeners (vFinal)
-
-import { appState, saveState, loadState } from './state.js';
+// events.js - Manages all event listeners
+import { appState } from './state.js';
 import { handleUpdateStock, handleRestock, handleSetStock } from './services.js';
 import { refreshUI, showToast, renderReport, renderCustomPOModal } from './ui.js';
 import { generatePurchaseOrder } from './purchaseOrderService.js';
@@ -43,7 +42,7 @@ function attachCurrentStockEditListeners() {
             const input = document.createElement('input');
             input.type = 'number';
             input.value = valueDiv.textContent;
-            input.className = 'input-field w-24 text-2xl font-bold bg-dark text-primary';
+            input.className = 'input-field w-24 text-2xl font-bold';
             
             valueDiv.replaceWith(input);
             input.focus();
@@ -86,6 +85,8 @@ function attachRestockListeners() {
 }
 
 function attachPurchaseOrderListener() {
+    // This listener is now attached dynamically in renderReorderList in ui.js
+    // We can use event delegation on the header to make it more robust.
     const reorderHeader = document.getElementById('reorder-header');
     if (reorderHeader && !reorderHeader.dataset.listenerAttached) {
         reorderHeader.dataset.listenerAttached = 'true';
@@ -117,12 +118,14 @@ function attachAuthListeners() {
             if (error) {
                 showToast(`Login failed: ${error.message}`, 'error');
             }
+            // onAuthStateChange in main.js will handle success
         });
     }
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
             await supabase.auth.signOut();
+            // onAuthStateChange in main.js will handle UI changes
         });
     }
 }
@@ -141,13 +144,9 @@ function attachModalListeners() {
         }
         if (target && target.id === 'confirm-reset-btn') {
             showToast('Resetting data... please wait.', 'info');
-            // Use Supabase RPC to call a function that truncates tables
-            const { error } = await supabase.rpc('reset_data');
-            if (error) {
-                showToast(`Reset failed: ${error.message}`, 'error');
-            } else {
-                window.location.reload();
-            }
+            await supabase.from('production_log').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('materials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            window.location.reload();
         }
     });
 

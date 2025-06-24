@@ -48,6 +48,12 @@
         </div>
     </div>
 
+    <!-- Loader element -->
+    <div id="loader" class="fixed inset-0 bg-bg-dark flex-col items-center justify-center z-40 hidden">
+        <div class="loader-spinner"></div>
+        <p class="text-secondary mt-4">Loading Factory Data...</p>
+    </div>
+
     <!-- Main Content (Initially Hidden) -->
     <main id="main-content" class="container mx-auto px-4 pt-20 pb-8 opacity-0 transition-opacity duration-500 hidden">
         <!-- KPI Row -->
@@ -71,19 +77,19 @@
 
         <!-- Main Data Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1"> <!-- Production Input -->
+            <div class="lg:col-span-1">
                 <div class="dashboard-card p-6">
                     <h2 class="text-lg font-semibold mb-4">Production Input</h2>
                     <div id="product-cards" class="space-y-4"></div>
                 </div>
             </div>
-            <div class="lg:col-span-1"> <!-- Material Inventory -->
+            <div class="lg:col-span-1">
                 <div class="dashboard-card p-6 flex flex-col">
                     <h2 class="text-lg font-semibold mb-4">Material Inventory</h2>
                     <div id="material-cards" class="grid grid-cols-1 gap-4 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></div>
                 </div>
             </div>
-            <div class="lg:col-span-1"> <!-- Production Log -->
+            <div class="lg:col-span-1">
                  <div class="dashboard-card p-6 flex flex-col">
                     <h2 class="text-lg font-semibold mb-4">Production Log</h2>
                     <ul id="production-log-list" class="space-y-3 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></ul>
@@ -96,7 +102,6 @@
             <div class="dashboard-card p-6">
                 <div id="reorder-header" class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold">Re-order List</h2>
-                    <!-- Button will be inserted here by ui.js if needed -->
                 </div>
                 <ul id="reorder-list" class="space-y-3 overflow-y-auto pr-2" style="max-height: 250px;"></ul>
             </div>
@@ -104,7 +109,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="py-4">
+    <footer id="footer" class="py-4 hidden">
         <div class="container mx-auto px-4 flex justify-center">
              <button id="show-reset-modal-btn" class="btn btn-danger text-sm">
                 <i class="fas fa-redo mr-1"></i> Reset All Data
@@ -118,7 +123,6 @@
     <div id="custom-po-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
     
     <div id="toast-container"></div>
-    <!-- Load main.js as module, it will import others -->
     <script src="main.js" type="module"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// main.js - Application Entry Point
+// main.js - Application Entry Point (vFinal)
 
 import { loadInitialAppState, appState } from './state.js';
 import { refreshUI } from './ui.js';

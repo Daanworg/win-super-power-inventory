@@ -91,7 +91,6 @@ function renderCharts() {
 function renderProductionHistoryChart() {
     const ctx = document.getElementById('production-history-chart')?.getContext('2d');
     if (!ctx) return;
-    // --- FIX: Destroy the old chart instance before creating a new one ---
     if (productionChart) {
         productionChart.destroy();
     }
@@ -134,7 +133,6 @@ function renderProductionHistoryChart() {
 function renderInventoryStatusChart() {
     const ctx = document.getElementById('inventory-status-chart')?.getContext('2d');
     if (!ctx) return;
-    // --- FIX: Destroy the old chart instance before creating a new one ---
     if (inventoryChart) {
         inventoryChart.destroy();
     }

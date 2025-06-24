@@ -1,4 +1,4 @@
-// config.js - FACTORY CONFIGURATION FILE - vFinal
+// config.js - FACTORY CONFIGURATION FILE - v4.0 (Zero Initial Stock, No Max)
 
 export const MATERIALS_CONFIG = [
   // Frame Materials
@@ -13,9 +13,13 @@ export const MATERIALS_CONFIG = [
   { name: "15cm Round Tube 5/8 MF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "5/8 x 4 CSK Screw", unit: "pcs", currentStock: 0, reorderPoint: 100 },
   { name: "3/8 x 4 Screw", unit: "pcs", currentStock: 0, reorderPoint: 100 },
+
+  // Wire/Connector Materials
   { name: "16 1/2 Ygr Wire", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "F-Connector Male (4005)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
   { name: "F-Connector Female (2002)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
+
+  // Booster Materials
   { name: "Macking Coil", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Coil 28gsm (25cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Coil 26gsm (16cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
@@ -35,12 +39,16 @@ export const MATERIALS_CONFIG = [
   { name: "Capacitor 25v 100uF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Capacitor 25v 220uF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Transistor (2355)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
+  
+  // Power Supply Materials
   { name: "Plastic Box (Power)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Transformer", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "IN4007 Diode", unit: "pcs", currentStock: 0, reorderPoint: 200 },
   { name: "5C 2V Wire 3-yard", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "4-Antenna Jack", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "AC Cord", unit: "pcs", currentStock: 0, reorderPoint: 50 },
+
+  // Packing Materials
   { name: "Packing Bag", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Warranty Card", unit: "pcs", currentStock: 0, reorderPoint: 50 },
   { name: "Round Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50 },
@@ -65,6 +73,7 @@ function generateCompleteUnitRecipe(recipes) {
         recipes["Wire Assembly"],
         recipes["Packaging Set"]
     ];
+
     for (const assembly of componentAssemblies) {
         for (const material in assembly) {
             if (completeRecipe[material]) {

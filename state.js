@@ -1,8 +1,9 @@
-// state.js - TEMPORARY DIAGNOSTIC v3 - ULTRA-Simplified Materials Fetch
+// state.js - Manages Application State (Full Logic + sessionStorage Caching - vFinal)
 
 import { supabase } from './supabaseClient.js';
 import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js'; 
 import { showToast, refreshUI } from './ui.js';
+import { handleError } from './errorService.js'; // This assumes you will create errorService.js
 
 export let appState = {
     user: null,
@@ -10,33 +11,76 @@ export let appState = {
     productRecipes: RECIPES_CONFIG,
     productionLog: [],
     lastLoadedUserId: null, 
-    dataLoaded: false       
+    dataLoaded: false,
+    cacheTimestamp: null
 };
 
-async function robustFetchWithTimeout(promise, ms, operationName = "Supabase Operation") {
-    let timeoutId;
-    const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => {
-            console.warn(`[STATE.JS] ${operationName} TIMED OUT after ${ms/1000}s.`);
-            reject(new Error(`${operationName} timed out after ${ms / 1000} seconds`));
-        }, ms);
-    });
+const CACHE_KEY = 'appStateCache';
+const CACHE_EXPIRY_MS = 5 * 60 * 1000; // 5 minutes
 
+function saveStateToSessionStorage() {
+    if (!appState.user) return;
     try {
-        const result = await Promise.race([promise, timeoutPromise]);
-        clearTimeout(timeoutId); 
-        return result;
-    } catch (error) {
-        clearTimeout(timeoutId); 
-        throw error; 
+        const cacheData = {
+            materials: appState.materials,
+            productionLog: appState.productionLog,
+            timestamp: Date.now(),
+            userId: appState.user.id 
+        };
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (e) {
+        handleError(e, "session_storage_save_error", false); 
+    }
+}
+
+function loadStateFromSessionStorage() {
+    if (!appState.user) return false; 
+    try {
+        const cachedItem = sessionStorage.getItem(CACHE_KEY);
+        if (!cachedItem) return false;
+        const parsedData = JSON.parse(cachedItem);
+        
+        if (parsedData && parsedData.userId === appState.user.id) {
+            if ((Date.now() - parsedData.timestamp) < CACHE_EXPIRY_MS) {
+                appState.materials = parsedData.materials || [];
+                appState.productionLog = parsedData.productionLog || [];
+                appState.cacheTimestamp = parsedData.timestamp; 
+                appState.lastLoadedUserId = parsedData.userId;
+                return true; 
+            } else {
+                sessionStorage.removeItem(CACHE_KEY);
+            }
+        } else if (parsedData && parsedData.userId !== appState.user.id) {
+            sessionStorage.removeItem(CACHE_KEY);
+        }
+    } catch (e) {
+        handleError(e, "session_storage_load_error", false);
+        sessionStorage.removeItem(CACHE_KEY); 
+    }
+    return false; 
+}
+
+async function fetchWithRetry(promiseFn, operationName = "Supabase Operation") {
+    const retries = 2;
+    const initialDelay = 500;
+    for (let i = 0; i <= retries; i++) {
+        try {
+            const { data, error } = await promiseFn();
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            if (i < retries) {
+                const delay = initialDelay * Math.pow(2, i);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            } else {
+                throw error; 
+            }
+        }
     }
 }
 
 function dbMaterialToAppMaterial(dbMaterial) {
-    if (!dbMaterial) {
-        console.warn("[STATE.JS] dbMaterialToAppMaterial received null or undefined dbMaterial");
-        return null; 
-    }
+    if (!dbMaterial) return null; 
     return { 
         id: dbMaterial.id, name: dbMaterial.name, unit: dbMaterial.unit, 
         currentStock: dbMaterial.current_stock, reorderPoint: dbMaterial.reorder_point,
@@ -44,7 +88,7 @@ function dbMaterialToAppMaterial(dbMaterial) {
     };
 }
 
-function dbLogToAppLog(dbLog) { 
+function dbLogToAppLog(dbLog) {
     if(!dbLog) return null;
     return {
         id: dbLog.id, productName: dbLog.product_name, quantity: dbLog.quantity,
@@ -54,58 +98,77 @@ function dbLogToAppLog(dbLog) {
 }
 
 export async function loadInitialAppState() {
-    console.log("[STATE.JS] loadInitialAppState START (TEMP DIAGNOSTIC v3)");
-    const FETCH_TIMEOUT_MS = 10000; // Reduced timeout to 10s for quicker feedback
-
     if (!appState.user) {
-        try {
-            console.log("[STATE.JS] Attempting to get user as appState.user was null.");
-            const { data: { user: authUser } } = await supabase.auth.getUser();
-            if (authUser) appState.user = authUser;
-            else console.warn("[STATE.JS] supabase.auth.getUser() returned no user in diagnostic.");
-        } catch (e) { console.error("[STATE.JS] Error in supabase.auth.getUser():", e); }
+        handleError(new Error("User not identified for data loading."), "auth_missing_user");
+        return false;
     }
-    const currentUserIdForLog = appState.user ? appState.user.id : "USER_UNKNOWN_FOR_DIAG_MATERIALS_FETCH_V3";
-    console.log("[STATE.JS] Current User for state load (or attempt):", currentUserIdForLog);
 
-    appState.materials = []; 
-    appState.productionLog = [];
-    appState.dataLoaded = false; 
+    const loadedFromCache = loadStateFromSessionStorage();
+    if (loadedFromCache) {
+        appState.dataLoaded = true;
+        refreshUI(); 
+        fetchUpdatesInBackground();
+        return true; 
+    }
 
     try {
-        let actualMaterialsData = [];
-        console.log(`[STATE.JS] Preparing to fetch materials (ULTRA-SIMPLIFIED)...`);
-        
-        // EVEN SIMPLER QUERY: Just select 'id, name' and limit to 5. No ordering.
-        const materialsQuery = supabase.from('materials').select('id, name').limit(5); 
-        
-        console.log("[STATE.JS] Executing materials query (ULTRA-SIMPLIFIED)...");
-        const rawMaterialsResponse = await robustFetchWithTimeout(materialsQuery, FETCH_TIMEOUT_MS, "Fetching materials (ULTRA-SIMPLIFIED)");
-        
-        console.log("[STATE.JS] RAW RESPONSE from materials query (ULTRA-SIMPLIFIED):", JSON.stringify(rawMaterialsResponse));
+        const materialsData = await fetchWithRetry(() => supabase.from('materials').select('*, updated_at').order('name', { ascending: true }), "Fetching materials");
+        appState.materials = (materialsData || []).map(dbMaterialToAppMaterial).filter(m => m);
 
-        if (rawMaterialsResponse.error) {
-            throw new Error(`Supabase error fetching materials (ULTRA-SIMPLIFIED): ${rawMaterialsResponse.error.message}`);
+        if (appState.materials.length === 0 && MATERIALS_CONFIG.length > 0) {
+            showToast('No materials in DB. Seeding initial data...', 'info');
+            const materialsToInsert = MATERIALS_CONFIG.map(m => ({ name: m.name, unit: m.unit, current_stock: m.currentStock, reorder_point: m.reorderPoint }));
+            const seedData = await fetchWithRetry(() => supabase.from('materials').insert(materialsToInsert).select('*, updated_at'), "Seeding materials");
+            appState.materials = (seedData || []).map(dbMaterialToAppMaterial).filter(m => m);
+            showToast('Materials seeded successfully!', 'success');
         }
-        actualMaterialsData = rawMaterialsResponse.data || [];
-        console.log(`[STATE.JS] Fetched ${actualMaterialsData.length} materials from DB (ULTRA-SIMPLIFIED).`);
-        
-        // For this test, we don't map or seed, just see if the select works
-        appState.materials = actualMaterialsData; // Store raw for now if needed for inspection
 
-        // Production log fetch remains commented out for this specific diagnostic
-        console.warn("[STATE.JS] Production log fetch and full seeding skipped for this diagnostic.");
-            
-        appState.dataLoaded = true; // Mark as loaded if we got this far without timeout
-        appState.lastLoadedUserId = appState.user ? appState.user.id : null; 
-            
-        console.log('[STATE.JS] loadInitialAppState END - SUCCESS (TEMP DIAGNOSTIC v3)');
+        const productionLogData = await fetchWithRetry(() => supabase.from('production_log').select('*').eq('user_id', appState.user.id).order('produced_at', { ascending: false }).limit(100), "Fetching production log");
+        appState.productionLog = (productionLogData || []).map(dbLogToAppLog).filter(l => l);
+        
+        appState.dataLoaded = true;
+        appState.lastLoadedUserId = appState.user.id;
+        saveStateToSessionStorage();
         return true;
 
     } catch (error) {
-        console.error('[STATE.JS] loadInitialAppState END - FAILED (TEMP DIAGNOSTIC v3):', error.message, error.stack);
-        showToast(`Error loading data (state.js v3): ${error.message}`, 'error');
-        appState.dataLoaded = false; 
-        return false; 
+        handleError(error, "initial_app_state_full_load_failed");
+        appState.dataLoaded = false;
+        return false;
+    }
+}
+    
+async function fetchUpdatesInBackground() {
+    if (!appState.user || !appState.cacheTimestamp) return;
+    let UIRefreshedNeeded = false;
+    try {
+        const lastMaterialUpdateISO = new Date(appState.cacheTimestamp).toISOString();
+        const newMaterials = await fetchWithRetry(() => supabase.from('materials').select('*, updated_at').gt('updated_at', lastMaterialUpdateISO), "Background materials update");
+        
+        if (newMaterials.length > 0) {
+            const materialsMap = new Map(appState.materials.map(m => [m.id, m]));
+            newMaterials.forEach(nm => materialsMap.set(nm.id, dbMaterialToAppMaterial(nm)));
+            appState.materials = Array.from(materialsMap.values()).sort((a,b) => a.name.localeCompare(b.name));
+            UIRefreshedNeeded = true;
+        }
+
+        const lastLogEntryDateISO = new Date(appState.cacheTimestamp).toISOString();
+        const newLogs = await fetchWithRetry(() => supabase.from('production_log').select('*').eq('user_id', appState.user.id).gt('produced_at', lastLogEntryDateISO), "Background log update");
+
+        if (newLogs.length > 0) {
+            const existingLogIds = new Set(appState.productionLog.map(l => l.id));
+            newLogs.forEach(log => { if (!existingLogIds.has(log.id)) appState.productionLog.push(dbLogToAppLog(log)); });
+            appState.productionLog.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (appState.productionLog.length > 100) appState.productionLog = appState.productionLog.slice(0, 100);
+            UIRefreshedNeeded = true;
+        }
+
+        if (UIRefreshedNeeded) {
+            saveStateToSessionStorage(); 
+            refreshUI(); 
+            showToast('Data updated in background.', 'info');
+        }
+    } catch (error) {
+        handleError(error, "background_data_fetch_failed", false); 
     }
 }

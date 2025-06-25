@@ -1,4 +1,4 @@
-/* style.css - Industrial Tech Theme vFinal (with Loader) */
+/* style.css - Industrial Tech Theme vFinal (with Loader & Z-index review) */
 
 :root {
     --bg-dark: #1a202c;
@@ -40,19 +40,21 @@ main {
     border-color: var(--accent-blue);
 }
 
-.header { /* Removed .modal-content here as it's distinct */
+.header { 
     background-color: var(--bg-panel);
     border-color: var(--border-color);
+    /* z-index is set inline in HTML (z-20) */
 }
 
 .modal-backdrop {
-    background-color: rgba(26, 32, 44, 0.8); /* Darker backdrop for modals */
+    background-color: rgba(26, 32, 44, 0.8); 
     backdrop-filter: blur(5px);
     transition: opacity 0.3s ease;
+    /* z-index is set inline in HTML (z-[5000]) */
 }
 
-.modal-content { /* Specific styling for modal content panes */
-    background-color: var(--bg-panel); /* Ensure modals use panel background */
+.modal-content { 
+    background-color: var(--bg-panel); 
     border: 1px solid var(--border-color);
     border-radius: 8px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.3);
@@ -67,8 +69,8 @@ main {
 
 .btn { padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; transition: all 0.2s ease; text-align: center; border: 1px solid transparent; cursor: pointer; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn:active:not(:disabled) { transform: scale(0.97); } /* Added :not(:disabled) */
-.btn-primary { background-color: var(--accent-blue); color: var(--bg-dark); } /* Ensure good contrast */
+.btn:active:not(:disabled) { transform: scale(0.97); } 
+.btn-primary { background-color: var(--accent-blue); color: var(--bg-dark); } 
 .btn-primary:hover:not(:disabled) { background-color: #63b3ed; }
 .btn-secondary { background-color: transparent; border-color: var(--accent-blue); color: var(--accent-blue); }
 .btn-secondary:hover:not(:disabled) { background-color: rgba(66, 153, 225, 0.1); }
@@ -78,12 +80,20 @@ main {
 .input-field { background-color: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; padding: 0.5rem 0.75rem; }
 .input-field:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5); }
 
-#toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; /* Ensure high z-index */ display: flex; flex-direction: column; gap: 10px; }
-.toast { padding: 12px 16px; border-radius: 6px; color: #ffffff; /* Ensure text is visible on colored backgrounds */ font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateX(100%); transition: all 0.3s ease-in-out; }
+#toast-container { 
+    position: fixed; 
+    top: 20px; 
+    right: 20px; 
+    z-index: 10000; /* Ensure highest z-index */ 
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
+}
+.toast { padding: 12px 16px; border-radius: 6px; color: #ffffff; font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateX(100%); transition: all 0.3s ease-in-out; }
 .toast.show { opacity: 1; transform: translateX(0); }
 .toast-success { background-color: var(--accent-green); }
 .toast-error { background-color: var(--accent-red); }
-.toast-info { background-color: var(--accent-blue); } /* Removed color: var(--text-primary) to use default white */
+.toast-info { background-color: var(--accent-blue); } 
 
 .icon-btn { color: var(--text-secondary); cursor: pointer; transition: color 0.2s; }
 .icon-btn:hover { color: var(--accent-blue); }

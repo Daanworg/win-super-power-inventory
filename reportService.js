@@ -6,7 +6,8 @@ const THIRTY_DAYS_AGO = new Date(new Date().setDate(new Date().getDate() - 30));
 
 export function getMonthlyProductionSummary() {
     const summary = {};
-    appState.productionLog
+    const productionLog = appState.productionLog || [];
+    productionLog
         .filter(entry => new Date(entry.date) > THIRTY_DAYS_AGO)
         .forEach(entry => {
             if (!summary[entry.productName]) {
@@ -19,7 +20,8 @@ export function getMonthlyProductionSummary() {
 
 export function getMonthlyMaterialUsage() {
     const usage = {};
-    appState.productionLog
+    const productionLog = appState.productionLog || [];
+    productionLog
         .filter(entry => new Date(entry.date) > THIRTY_DAYS_AGO)
         .forEach(entry => {
             const recipe = appState.productRecipes[entry.productName];

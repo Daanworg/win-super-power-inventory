@@ -1,10 +1,5 @@
-// purchaseOrderService.js - Generates Purchase Order PDFs
+// purchaseOrderService.js - Generates Purchase Order PDFs (Non-Financial Version)
 
-/**
- * Generates a single consolidated and customized Purchase Order PDF.
- * @param {Array<Object>} itemsToOrder - An array of objects, each with { material, quantity }.
- * @param {string} supplierName - The name of the supplier for the PO.
- */
 export function generatePurchaseOrder(itemsToOrder, supplierName) {
     if (!itemsToOrder || itemsToOrder.length === 0) {
         console.error("No items provided for PO generation.");
@@ -47,20 +42,17 @@ export function generatePurchaseOrder(itemsToOrder, supplierName) {
     doc.text(supplierName || "________________________ (Supplier Name)", 20, 76);
     doc.text("________________________ (Supplier Address)", 20, 82);
 
-
-    // --- REDESIGNED ITEMS TABLE ---
-    const tableColumn = ["#", "Item Description", "Quantity", "Unit", "Unit Price", "Line Total"];
+    // Items Table
+    const tableColumn = ["#", "Item Description", "Order Quantity", "Unit"];
     const tableRows = [];
 
     itemsToOrder.forEach((item, index) => {
         const { material, quantity } = item;
         const materialRow = [
-            index + 1,          // Line number
-            material.name,      // Item Description
-            quantity,           // Order Quantity
-            material.unit,      // Unit
-            '',                 // Placeholder for Unit Price
-            ''                  // Placeholder for Line Total
+            index + 1,
+            material.name,
+            quantity,
+            material.unit
         ];
         tableRows.push(materialRow);
     });
@@ -70,23 +62,17 @@ export function generatePurchaseOrder(itemsToOrder, supplierName) {
         body: tableRows,
         startY: 95,
         theme: 'grid',
-        headStyles: { fillColor: [45, 55, 72] },
-        didDrawPage: function (data) {
-            // --- ADD GRAND TOTAL SECTION ---
-            const finalY = data.cursor.y;
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "bold");
-            doc.text("Grand Total:", 140, finalY + 15);
-            doc.setLineWidth(0.5);
-            doc.line(165, finalY + 16, 200, finalY + 16); // Line for total amount
-        }
+        headStyles: { fillColor: [45, 55, 72] } // Dark blue header
     });
     
     // Footer
+    const finalY = doc.lastAutoTable.finalY || 150;
     doc.setFontSize(10);
     doc.setTextColor(150);
-    doc.text("Please deliver items to the address above. Contact us with any questions regarding this order.", 105, 280, { align: 'center'});
-
+    doc.text("Please deliver items to the address above. Contact us with any questions regarding this order.", 105, Math.max(finalY + 20, 270), { align: 'center'});
+    
+    doc.setFont("helvetica", "normal");
+    doc.text("Authorized By: ________________________", 20, Math.max(finalY + 40, 285));
 
     // Save the PDF
     const safeSupplierName = supplierName.replace(/[\s/]/g, '_') || 'General';

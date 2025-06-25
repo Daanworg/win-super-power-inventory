@@ -5,9 +5,8 @@ import { handleUpdateStock, handleRestock, handleSetStock } from './services.js'
 import { refreshUI, showToast, renderReport, renderCustomPOModal } from './ui.js';
 import { generatePurchaseOrder } from './purchaseOrderService.js';
 import { supabase } from './supabaseClient.js';
-// Removed: import { handleLoginSubmit } from './main.js'; // This was the source of the error
+// REMOVED: import { handleLoginSubmit } from './main.js'; // No longer needed here, it's passed as an argument
 
-// This function is called by refreshUI in ui.js to re-attach listeners to dynamic elements
 export function attachAllListeners() {
     // console.log("[EVENTS.JS] attachAllListeners called.");
     attachProductInputListeners();
@@ -16,11 +15,9 @@ export function attachAllListeners() {
     attachPurchaseOrderListener(); 
 }
 
-// This function is called once by main.js on DOMContentLoaded for static elements
-// It now ACCEPTS the login submit handler from main.js
-export function attachOneTimeListeners(loginSubmitHandler) {
-    console.log("[EVENTS.JS] attachOneTimeListeners called, received loginSubmitHandler:", typeof loginSubmitHandler);
-    attachAuthListeners(loginSubmitHandler); // Pass the handler
+export function attachOneTimeListeners(loginSubmitHandlerCallback) { // Parameter name changed for clarity
+    console.log("[EVENTS.JS] attachOneTimeListeners called, received loginSubmitHandlerCallback:", typeof loginSubmitHandlerCallback);
+    attachAuthListeners(loginSubmitHandlerCallback); // Pass the handler
     attachModalListeners();
 }
 
@@ -67,10 +64,7 @@ function attachCurrentStockEditListeners() {
             input.focus();
             input.select();
 
-            const saveChange = async () => {
-                const newValue = parseInt(input.value, 10);
-                await handleSetStock(materialName, newValue); 
-            };
+            const saveChange = async () => await handleSetStock(materialName, parseInt(input.value, 10));
             const handleKeyDown = (event) => {
                 if (event.key === 'Enter') input.blur();
                 else if (event.key === 'Escape') {
@@ -162,12 +156,12 @@ function attachAuthListeners(loginSubmitHandler) { // Accepts the handler
         logoutBtn.dataset.authListener = 'true';
         logoutBtn.addEventListener('click', async () => {
             console.log("[EVENTS.JS] Logout button clicked.");
-            isHandlingAuthChange = true; // Set flag before calling signOut
+            // isHandlingAuthChange = true; // This flag is in main.js, events.js should not manage it.
             const { error } = await supabase.auth.signOut();
             if (error) {
                 console.error("[EVENTS.JS] Error signing out:", error);
                 showToast(`Logout error: ${error.message}`, 'error');
-                isHandlingAuthChange = false; // Reset on error if signOut doesn't trigger event
+                // isHandlingAuthChange = false; 
             }
             // onAuthStateChange in main.js will handle UI changes and reset isHandlingAuthChange
         });
@@ -185,7 +179,7 @@ function attachModalListeners() {
         showResetBtn.dataset.modalListener = 'true';
         showResetBtn.addEventListener('click', () => { if(resetModal) resetModal.classList.remove('hidden'); });
     }
-    if (resetModal && !resetModal.dataset.modalListenerInteraction) { // Different dataset attr for interaction
+    if (resetModal && !resetModal.dataset.modalListenerInteraction) { 
         resetModal.dataset.modalListenerInteraction = 'true';
         resetModal.addEventListener('click', async (e) => {
             if (e.target.id === 'cancel-reset-btn' || e.target === resetModal || e.target.closest('#cancel-reset-btn')) {

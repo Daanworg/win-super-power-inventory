@@ -1,58 +1,59 @@
-// ui.js - Renders all UI components (vFinal with Chart Fix & showToast export)
+// ui.js - Renders all UI components (vFinal)
 
 import { appState } from './state.js';
-import { attachAllListeners } from './events.js'; // For re-attaching to dynamic content
+import { attachAllListeners } from './events.js';
 import { getMonthlyProductionSummary, getMonthlyMaterialUsage } from './reportService.js';
 
 let productionChart = null;
 let inventoryChart = null;
 
-// Set Chart.js defaults for our dark theme
-Chart.defaults.color = 'hsl(210, 14%, 66%)'; // Default text color for charts
-Chart.defaults.borderColor = 'hsl(220, 13%, 30%)'; // Default border color for chart elements
+Chart.defaults.color = 'hsl(210, 14%, 66%)';
+Chart.defaults.borderColor = 'hsl(220, 13%, 30%)';
 
-// Export showToast so it can be used by other modules (like main.js, state.js)
 export function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) {
-        console.error("Toast container not found!");
+        console.error("Toast container not found! Message:", message);
+        alert(`${type.toUpperCase()}: ${message}`);
         return;
     }
     const toast = document.createElement('div');
     const iconClass = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle';
-    toast.className = `toast toast-${type} flex items-center`; // Tailwind for alignment
-    toast.innerHTML = `<i class="fas ${iconClass} mr-2"></i><span>${message}</span>`; // Added margin to icon
+    toast.className = `toast toast-${type} flex items-center`;
+    toast.innerHTML = `<i class="fas ${iconClass} mr-2"></i><span>${message}</span>`;
     container.appendChild(toast);
     
-    requestAnimationFrame(() => { // Ensure element is in DOM before adding class for transition
+    requestAnimationFrame(() => {
         toast.classList.add('show');
     });
 
     setTimeout(() => {
         toast.classList.remove('show');
         toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-    }, 3000);
+    }, 4000); // Increased duration slightly
 }
 
-// Master function to update the entire UI
 export function refreshUI() {
-    console.log("[UI.JS] Refreshing UI. Materials count:", appState.materials.length, "Production log count:", appState.productionLog.length);
+    // console.log("[UI.JS] Refreshing UI. Materials:", appState.materials?.length, "Logs:", appState.productionLog?.length);
     if (!appState.user) {
-        console.log("[UI.JS] No user in appState, cannot refresh main UI components.");
-        // UI should be showing login screen, handled by main.js
+        console.warn("[UI.JS] No user in appState, cannot refresh main UI components.");
         return;
     }
-    renderKpiCards();
-    renderCharts();
-    renderProductInputs();
-    renderInventory();
-    renderProductionLog();
-    renderModals(); 
-    renderReorderList();
-    attachAllListeners(); // Re-attach listeners to newly rendered dynamic elements
-    console.log("[UI.JS] UI Refresh complete.");
+    try {
+        renderKpiCards();
+        renderCharts();
+        renderProductInputs();
+        renderInventory();
+        renderProductionLog();
+        renderModals(); 
+        renderReorderList();
+        attachAllListeners();
+        // console.log("[UI.JS] UI Refresh complete.");
+    } catch (error) {
+        console.error("[UI.JS] Error during refreshUI:", error);
+        showToast("Error updating dashboard display. Check console.", "error");
+    }
 }
-
 
 function animateValue(element, start, end, duration, prefix = '', suffix = '') {
     let startTimestamp = null;
@@ -72,13 +73,16 @@ function renderKpiCards() {
     const kpiRow = document.getElementById('kpi-row');
     if (!kpiRow) return;
 
-    const totalStockItems = appState.materials.reduce((sum, mat) => sum + (mat.currentStock || 0), 0);
-    const itemsBelowReorder = appState.materials.filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0)).length;
+    const materials = appState.materials || [];
+    const productionLog = appState.productionLog || [];
+
+    const totalStockItems = materials.reduce((sum, mat) => sum + (mat.currentStock || 0), 0);
+    const itemsBelowReorder = materials.filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0)).length;
     
     const oneMonthAgo = new Date();
     oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
     
-    const unitsProducedMonth = appState.productionLog
+    const unitsProducedMonth = productionLog
         .filter(entry => {
             const entryDate = new Date(entry.date);
             return entryDate > oneMonthAgo && entry.productName === 'COMPLETE ANTENNA UNIT';
@@ -121,15 +125,16 @@ function renderProductionHistoryChart() {
     const ctx = document.getElementById('production-history-chart')?.getContext('2d');
     if (!ctx) return;
     if (productionChart) {
-        productionChart.destroy(); // Destroy existing chart instance
+        productionChart.destroy();
     }
     const labels = [];
     const data = [];
+    const productionLog = appState.productionLog || [];
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
         labels.push(d.toLocaleDateString([], { weekday: 'short' }));
-        const totalProduced = appState.productionLog
+        const totalProduced = productionLog
             .filter(entry => {
                 const entryDate = new Date(entry.date);
                 return entryDate.toDateString() === d.toDateString() && entry.productName === 'COMPLETE ANTENNA UNIT';
@@ -158,10 +163,10 @@ function renderInventoryStatusChart() {
     const ctx = document.getElementById('inventory-status-chart')?.getContext('2d');
     if (!ctx) return;
     if (inventoryChart) {
-        inventoryChart.destroy(); // Destroy existing chart instance
+        inventoryChart.destroy();
     }
     let okCount = 0, warningCount = 0, criticalCount = 0;
-    appState.materials.forEach(m => {
+    (appState.materials || []).forEach(m => {
         const currentStock = m.currentStock || 0;
         const reorderPoint = m.reorderPoint || 0;
         if (currentStock <= reorderPoint) criticalCount++;
@@ -181,14 +186,13 @@ function renderInventoryStatusChart() {
 
 function renderModals() {
     const resetModal = document.getElementById('reset-modal');
-    if (resetModal && resetModal.innerHTML.trim() === '') { // Check if empty before populating
+    if (resetModal && resetModal.innerHTML.trim() === '') {
         resetModal.innerHTML = `<div class="modal-content p-6 max-w-sm w-full mx-4"><h3 class="text-lg font-semibold mb-2">Confirm Reset</h3><p class="text-secondary mb-4">Are you sure you want to reset your production log data? This action cannot be undone for your entries.</p><div class="flex justify-end space-x-2"><button id="cancel-reset-btn" class="btn btn-secondary">Cancel</button><button id="confirm-reset-btn" class="btn btn-danger">Reset My Log</button></div></div>`;
     }
     const reportsModal = document.getElementById('reports-modal');
     if (reportsModal && reportsModal.innerHTML.trim() === '') {
         reportsModal.innerHTML = `<div class="modal-content p-6 max-w-2xl w-full mx-4"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-semibold">Generate Report</h3><button id="close-reports-modal-btn" class="text-secondary hover:text-primary text-2xl">×</button></div><div class="flex gap-4 mb-4"><button id="report-prod-summary" class="flex-1 btn btn-primary">Monthly Production</button><button id="report-mat-usage" class="flex-1 btn btn-primary" style="background-color: var(--accent-green);">Monthly Material Usage</button></div><div id="report-content" class="p-4 border border-border-color rounded bg-bg-dark min-h-[300px]">Select a report to view data.</div></div>`;
     }
-    // Custom PO Modal is rendered dynamically by renderCustomPOModal
 }
 
 export function renderReport(type) {
@@ -196,12 +200,12 @@ export function renderReport(type) {
     if (!content) return;
     let data, title, headers, rows;
     if (type === 'production') {
-        data = getMonthlyProductionSummary(); // Assumes this function is correctly getting data from appState
+        data = getMonthlyProductionSummary();
         title = 'Monthly Production Summary (Last 30 Days)';
         headers = ['Product/Assembly', 'Total Units Produced'];
         rows = Object.entries(data).map(([name, qty]) => `<tr><td class="border-b border-border-color px-4 py-2">${name}</td><td class="border-b border-border-color px-4 py-2 text-right">${qty}</td></tr>`).join('');
-    } else { // material usage
-        data = getMonthlyMaterialUsage(); // Assumes this function is correctly getting data
+    } else {
+        data = getMonthlyMaterialUsage();
         title = 'Monthly Material Usage (Last 30 Days)';
         headers = ['Material', 'Total Quantity Consumed'];
         rows = Object.entries(data).map(([name, qty]) => {
@@ -219,8 +223,9 @@ export function renderReport(type) {
 function renderProductInputs() {
     const container = document.getElementById('product-cards');
     if (!container) return;
-    container.innerHTML = ''; // Clear existing
-    for (const productName in appState.productRecipes) {
+    container.innerHTML = '';
+    const productRecipes = appState.productRecipes || {};
+    for (const productName in productRecipes) {
         const cardHTML = `
             <div class="dashboard-card p-4 border-l-4 border-l-transparent" data-product-name="${productName}">
                 <h3 class="font-medium mb-3">${productName}</h3>
@@ -236,21 +241,27 @@ function renderProductInputs() {
 function renderInventory() {
     const container = document.getElementById('material-cards');
     if (!container) return;
-    container.innerHTML = ''; // Clear existing
-    appState.materials.forEach(material => {
+    container.innerHTML = ''; 
+    const materials = appState.materials || [];
+    if (materials.length === 0) {
+        container.innerHTML = `<p class="text-secondary text-center col-span-full">No materials data available.</p>`;
+        return;
+    }
+    materials.forEach(material => {
+        if (!material) return;
         const currentStock = material.currentStock || 0;
-        const reorderPoint = material.reorderPoint || 1; // Avoid division by zero if reorderPoint is 0
+        const reorderPoint = material.reorderPoint || 1;
         const safeStockLevel = reorderPoint * 2;
-        const stockPercentage = Math.min((currentStock / (safeStockLevel || 1)) * 100, 100); // Avoid division by zero
+        const stockPercentage = Math.min((currentStock / (safeStockLevel || 1)) * 100, 100);
         
         let statusColor = 'var(--accent-green)';
         if (currentStock <= reorderPoint * 1.5) statusColor = 'var(--accent-yellow)'; 
         if (currentStock <= reorderPoint) statusColor = 'var(--accent-red)';
         
         const cardHTML = `
-             <div class="dashboard-card p-4 border-l-4" style="border-left-color: ${statusColor}" data-material-name="${material.name}">
+             <div class="dashboard-card p-4 border-l-4" style="border-left-color: ${statusColor}" data-material-name="${material.name || 'Unknown Material'}">
                  <div class="flex justify-between items-start mb-1">
-                     <h3 class="font-medium text-sm">${material.name}</h3>
+                     <h3 class="font-medium text-sm">${material.name || 'Unknown Material'}</h3>
                      <div class="text-xs text-secondary flex items-center gap-3">
                          <i class="fas fa-plus-circle icon-btn restock-icon" title="Restock"></i>
                          <i class="fas fa-edit icon-btn edit-current-stock" title="Set Current Stock"></i>
@@ -260,7 +271,7 @@ function renderInventory() {
                      <div class="text-2xl font-bold current-stock-value">${currentStock}</div>
                      <span class="text-sm text-secondary">${material.unit || 'N/A'}</span>
                  </div>
-                 <div class="w-full bg-bg-dark rounded-full h-1.5"> <!-- Changed bg-dark to bg-bg-dark for consistency with theme -->
+                 <div class="w-full bg-bg-dark rounded-full h-1.5">
                      <div class="h-1.5 rounded-full" style="width: ${stockPercentage}%; background-color: ${statusColor};"></div>
                  </div>
                  <div class="restock-form mt-2 hidden"></div>
@@ -272,14 +283,14 @@ function renderInventory() {
 function renderProductionLog() {
     const list = document.getElementById('production-log-list');
     if (!list) return;
-    list.innerHTML = ''; // Clear existing
-    if (appState.productionLog.length === 0) { 
+    list.innerHTML = ''; 
+    const productionLog = appState.productionLog || [];
+    if (productionLog.length === 0) { 
         list.innerHTML = `<li class="text-secondary text-center pt-4">No production recorded yet.</li>`; return; 
     }
-    // Create a copy before reversing to avoid mutating the original appState.productionLog if it's referenced elsewhere
-    [...appState.productionLog].reverse().forEach(entry => {
+    productionLog.slice().sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(entry => { // Sort a copy for display
         const date = new Date(entry.date);
-        const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        const formattedDate = date.toLocaleString(); // Use a more complete date format
         const logHTML = `
             <li class="p-2 border-b border-border-color flex justify-between items-center text-sm">
                 <div>
@@ -301,7 +312,7 @@ function renderReorderList() {
     const existingButton = header.querySelector('#open-po-modal-btn');
     if (existingButton) existingButton.remove();
 
-    const itemsToReorder = appState.materials.filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0) * 1.5);
+    const itemsToReorder = (appState.materials || []).filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0) * 1.5);
 
     if (itemsToReorder.length === 0) {
         list.innerHTML = `<li class="text-secondary text-center pt-4">All stock levels are healthy.</li>`;
@@ -310,7 +321,6 @@ function renderReorderList() {
 
     const poButtonHTML = `<button id="open-po-modal-btn" class="btn btn-secondary text-sm">Create Purchase Order</button>`;
     header.insertAdjacentHTML('beforeend', poButtonHTML);
-    // Note: The event listener for this button is attached in events.js using delegation or re-attachment.
 
     itemsToReorder.forEach(item => {
         const currentStock = item.currentStock || 0;
@@ -341,7 +351,7 @@ export function renderCustomPOModal(materials) {
         const suggestedQty = Math.max(1, (reorderPoint * 2) - currentStock);
         return `
              <div class="po-item-row" data-material-name="${material.name}">
-                 <input type="checkbox" class="po-item-select form-checkbox h-5 w-5 rounded bg-bg-dark border-border-color text-accent-blue focus:ring-accent-blue"> <!-- Removed checked by default -->
+                 <input type="checkbox" class="po-item-select form-checkbox h-5 w-5 rounded bg-bg-dark border-border-color text-accent-blue focus:ring-accent-blue">
                  <div>
                      <span class="font-semibold">${material.name}</span>
                      <span class="text-xs text-secondary block">Stock: ${currentStock} | Reorder: ${reorderPoint}</span>

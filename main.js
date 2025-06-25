@@ -1,8 +1,8 @@
-// main.js - Application Entry Point (vFinal - Comprehensive Fixes)
+// main.js - Application Entry Point (vFinal - Comprehensive Fixes - Corrected Import)
 
 import { loadInitialAppState, appState } from './state.js';
-import { refreshUI, showToast } from './ui.js'; // Correct: showToast from ui.js
-import { attachOneTimeListeners, handleLoginSubmit } from './events.js'; // Import handleLoginSubmit
+import { refreshUI, showToast } from './ui.js'; 
+import { attachOneTimeListeners } from './events.js'; // CORRECTED: Only import attachOneTimeListeners
 import { supabase } from './supabaseClient.js';
 
 // UI Elements
@@ -19,10 +19,49 @@ console.log("[MAIN.JS] Script loaded. Setting up onAuthStateChange listener.");
 
 let isHandlingAuthChange = false; 
 
+// This function is defined in main.js and passed to events.js
+export async function handleLoginSubmit(email, password) {
+    console.log("[MAIN.JS] handleLoginSubmit called with email:", email);
+    if (isHandlingAuthChange) {
+        console.warn("[MAIN.JS] Login attempt while auth change is already being handled. Aborting.");
+        return;
+    }
+    isHandlingAuthChange = true; 
+
+    loginScreen.classList.add('hidden'); 
+    loader.classList.remove('hidden');
+    loader.classList.add('flex');
+
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            console.error('[MAIN.JS] Login Failed (signInWithPassword error):', error);
+            showToast(`Login failed: ${error.message}`, 'error');
+            loginScreen.classList.remove('hidden'); 
+            loader.classList.add('hidden');
+            loader.classList.remove('flex');
+            isHandlingAuthChange = false; 
+            return; 
+        }
+        console.log("[MAIN.JS] signInWithPassword successful. User data:", data.user?.email, "Session:", data.session ? "Exists" : "No Session");
+        // onAuthStateChange('SIGNED_IN') will handle the rest.
+        // isHandlingAuthChange will be reset by the onAuthStateChange handler.
+
+    } catch (catchAllError) { 
+        console.error('[MAIN.JS] Critical error during login attempt:', catchAllError);
+        showToast(`Login error: ${catchAllError.message}`, 'error');
+        loginScreen.classList.remove('hidden');
+        loader.classList.add('hidden');
+        loader.classList.remove('flex');
+        isHandlingAuthChange = false; 
+    }
+}
+
 async function handleSuccessfulAuth(sessionUser, eventType = "Auth") {
     if (!sessionUser) {
         console.error(`[MAIN.JS] handleSuccessfulAuth (${eventType}) called with no user.`);
-        isHandlingAuthChange = false; // Release lock if erroring early
+        isHandlingAuthChange = false; 
         return;
     }
     appState.user = sessionUser;
@@ -80,7 +119,7 @@ async function handleSuccessfulAuth(sessionUser, eventType = "Auth") {
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log(`[MAIN.JS] Auth event: ${event}`, session ? `User: ${session.user?.email}` : "No session");
 
-    if (isHandlingAuthChange && event !== 'SIGNED_OUT') { // Allow SIGNED_OUT to proceed to clean up UI
+    if (isHandlingAuthChange && event !== 'SIGNED_OUT' && event !== 'USER_DELETED') { 
         console.log("[MAIN.JS] Auth change handling already in progress. Skipping event:", event);
         return;
     }
@@ -90,7 +129,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         console.log("[MAIN.JS] SIGNED_IN event detected.");
         if (appState.user && appState.user.id === session.user.id && appState.dataLoaded) {
             console.log("[MAIN.JS] SIGNED_IN: User already set and data loaded. No action needed.");
-            loader.classList.add('hidden'); loader.classList.remove('flex'); // Ensure loader is hidden
+            loader.classList.add('hidden'); loader.classList.remove('flex');
             isHandlingAuthChange = false;
             return;
         }
@@ -110,7 +149,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             if (refreshError) {
                 console.error("[MAIN.JS] Error refreshing session during INITIAL_SESSION:", refreshError);
                 await supabase.auth.signOut(); 
-                // isHandlingAuthChange will be reset by the SIGNED_OUT event
                 return; 
             } else if (refreshData.session && refreshData.session.user) {
                 console.log("[MAIN.JS] Session refreshed successfully during INITIAL_SESSION.");
@@ -118,17 +156,17 @@ supabase.auth.onAuthStateChange(async (event, session) => {
             } else {
                 console.warn("[MAIN.JS] refreshSession returned no session or no user. Signing out.");
                 await supabase.auth.signOut();
-                isHandlingAuthChange = false;
+                isHandlingAuthChange = false; // Explicitly reset here before return
                 return; 
             }
         } catch (e) {
             console.error("[MAIN.JS] Exception during supabase.auth.refreshSession():", e);
             await supabase.auth.signOut(); 
-            isHandlingAuthChange = false;
+            isHandlingAuthChange = false; // Explicitly reset here before return
             return;
         }
-    } else if (event === 'SIGNED_OUT') {
-        console.log("[MAIN.JS] User signed out.");
+    } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+        console.log(`[MAIN.JS] User signed out or deleted (Event: ${event}).`);
         appState.user = null;
         appState.materials = [];
         appState.productionLog = [];
@@ -144,12 +182,12 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         loader.classList.add('hidden');
         loader.classList.remove('flex');
         loginScreen.classList.remove('hidden');
-        console.log("[MAIN.JS] UI reset for signed out state.");
+        console.log("[MAIN.JS] UI reset for signed out/deleted state.");
         isHandlingAuthChange = false;
     } else if (event === 'TOKEN_REFRESHED' && session && session.user) {
         console.log("[MAIN.JS] TOKEN_REFRESHED event. Updating appState.user.");
         appState.user = session.user; 
-        if (!appState.dataLoaded) { // If data wasn't loaded, perhaps due to an earlier issue
+        if (!appState.dataLoaded) { 
             console.log("[MAIN.JS] TOKEN_REFRESHED: Data not loaded, attempting handleSuccessfulAuth.");
             await handleSuccessfulAuth(session.user, "TOKEN_REFRESHED");
         } else {
@@ -169,12 +207,9 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     }
 });
 
-// This function is called by init(), which is called on DOMContentLoaded.
-// It sets up listeners that don't need to be re-attached on every UI refresh.
 function initializeStaticEventListeners() {
     console.log("[MAIN.JS] initializeStaticEventListeners called.");
-    // Pass handleLoginSubmit from main.js to events.js
-    attachOneTimeListeners(handleLoginSubmit); 
+    attachOneTimeListeners(handleLoginSubmit); // Pass the local handleLoginSubmit
 }
 
 document.addEventListener('DOMContentLoaded', initializeStaticEventListeners);

@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css"> <!-- Your custom theme styles -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon"> <!-- Basic Favicon Link -->
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
@@ -117,11 +118,11 @@
     </footer>
 
     <!-- Modals -->
-    <div id="reset-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
-    <div id="reports-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
-    <div id="custom-po-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
+    <div id="reset-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-[5000] hidden"></div>
+    <div id="reports-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-[5000] hidden"></div>
+    <div id="custom-po-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-[5000] hidden"></div>
     
-    <div id="toast-container" class="fixed top-5 right-5 z-[1000]"></div> <!-- Ensure toast container has high z-index -->
+    <div id="toast-container" class="fixed top-5 right-5 z-[10000]"></div> <!-- Ensure toast container has highest z-index -->
     <script src="main.js" type="module"></script>
 </body>
 </html>

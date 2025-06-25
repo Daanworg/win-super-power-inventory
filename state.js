@@ -1,58 +1,21 @@
-// state.js - Manages Application State with Supabase (vFinal-RLS-Aware with TIMEOUT + RAW RESPONSE LOGGING)
-// At the top of state.js
+// state.js - Manages Application State (TEMPORARY SIMPLIFIED LOAD FOR DEBUGGING v2)
+
+import { supabase } from './supabaseClient.js';
+import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js'; // Keep RECIPES_CONFIG for appState
+
+export let appState = {
+    user: null,
+    materials: [],
+    productRecipes: RECIPES_CONFIG, // Still needed for other parts of the app if they run
+    productionLog: [] // Will remain empty in this simplified load
+};
+
+// Placed at the top for clarity and use within this file
 async function robustFetchWithTimeout(promise, ms, operationName = "Supabase Operation") {
     let timeoutId;
     const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => {
             console.warn(`[STATE.JS] ${operationName} TIMED OUT after ${ms/1000}s.`);
-            reject(new Error(`${operationName} timed out after ${ms / 1000} seconds`));
-        }, ms);
-    });
-
-    try {
-        const result = await Promise.race([promise, timeoutPromise]);
-        clearTimeout(timeoutId); 
-        return result;
-    } catch (error) {
-        clearTimeout(timeoutId); 
-        throw error; 
-    }
-}
-import { supabase } from './supabaseClient.js';
-import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js';
-
-export let appState = {
-    user: null,
-    materials: [],
-    productRecipes: RECIPES_CONFIG,
-    productionLog: []
-};
-
-function fetchWithTimeout(promise, ms, timeoutError = new Error('Fetch timed out')) {
-    const timeout = new Promise((resolve, reject) => {
-        const id = setTimeout(() => {
-            clearTimeout(id);
-            console.warn(`[STATE.JS] Operation triggered timeout after ${ms}ms:`, timeoutError.message);
-            reject(timeoutError);
-        }, ms);
-    });
-    return Promise.race([
-        promise.finally(() => clearTimeout(timeoutIdVariablePlaceholder)), // Ensure timeout is cleared if promise resolves/rejects first
-        timeout
-    ]).then(value => { clearTimeout(timeoutIdVariablePlaceholder); return value; }) // Clear timeout on success
-     .catch(error => { clearTimeout(timeoutIdVariablePlaceholder); throw error; }); // Clear timeout on error
-    // Note: A better way to handle clearTimeout requires the timeout ID to be accessible.
-    // For simplicity here, we'll rely on the finally in the promise if it's added there.
-    // A more robust fetchWithTimeout would manage its own timeout ID.
-    // Let's simplify it for now and focus on the Supabase response.
-}
-
-// Simpler fetchWithTimeout for this debugging round, focusing on the promise result
-async function robustFetchWithTimeout(promise, ms, operationName = "Supabase Operation") {
-    let timeoutId;
-    const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => {
-            console.warn(`[STATE.JS] ${operationName} TIMED OUT after ${ms}ms.`);
             reject(new Error(`${operationName} timed out after ${ms / 1000} seconds`));
         }, ms);
     });
@@ -67,108 +30,90 @@ async function robustFetchWithTimeout(promise, ms, operationName = "Supabase Ope
     }
 }
 
-
 function dbMaterialToAppMaterial(dbMaterial) {
-    return {
-        id: dbMaterial.id,
-        name: dbMaterial.name,
-        unit: dbMaterial.unit,
-        currentStock: dbMaterial.current_stock,
-        reorderPoint: dbMaterial.reorder_point
+    // Ensure dbMaterial is not null or undefined before trying to access its properties
+    if (!dbMaterial) {
+        console.warn("[STATE.JS] dbMaterialToAppMaterial received null or undefined dbMaterial");
+        return null; // Or handle as an error, or return a default object
+    }
+    return { 
+        id: dbMaterial.id, 
+        name: dbMaterial.name, 
+        unit: dbMaterial.unit, 
+        currentStock: dbMaterial.current_stock, 
+        reorderPoint: dbMaterial.reorder_point 
     };
 }
 
 export async function loadInitialAppState() {
-    console.log("[STATE.JS] loadInitialAppState START");
-    const FETCH_TIMEOUT_MS = 15000; 
+    console.log("[STATE.JS] loadInitialAppState START (SIMPLIFIED DEBUG VERSION v2)");
+    const FETCH_TIMEOUT_MS = 15000; // 15 seconds timeout
 
     try {
-        if (!appState.user) {
-            console.log("[STATE.JS] appState.user is null, attempting to get user from Supabase...");
-            const { data: { user: authUser }, error: getUserError } = await supabase.auth.getUser(); // This itself might be an issue if called too early
-            if (getUserError) throw new Error(`Failed to get user: ${getUserError.message}`);
-            if (!authUser) throw new Error("User not authenticated for loading state.");
-            appState.user = authUser;
-            console.log("[STATE.JS] User set from supabase.auth.getUser():", appState.user.email);
-        } else {
-            console.log("[STATE.JS] appState.user already set:", appState.user.email);
-        }
-
-        console.log(`[STATE.JS] Preparing to fetch materials...`);
-        
-        // --- Core of the debugging: Log the raw response ---
-        let rawMaterialsResponse;
-        try {
-            const materialsQuery = supabase
-                .from('materials')
-                .select('*')
-                .order('name', { ascending: true });
-            
-            console.log("[STATE.JS] Executing materials query...");
-            rawMaterialsResponse = await robustFetchWithTimeout(materialsQuery, FETCH_TIMEOUT_MS, "Fetching materials");
-            
-            console.log("[STATE.JS] RAW RESPONSE from materials query:", rawMaterialsResponse);
-            // For more detail if it's a complex object that doesn't stringify well:
-            if (typeof rawMaterialsResponse === 'object' && rawMaterialsResponse !== null) {
-                console.log("[STATE.JS] RAW RESPONSE Keys:", Object.keys(rawMaterialsResponse));
-                if ('data' in rawMaterialsResponse) console.log("[STATE.JS] RAW RESPONSE has .data property");
-                if ('error' in rawMaterialsResponse) console.log("[STATE.JS] RAW RESPONSE has .error property, value:", rawMaterialsResponse.error);
+        // Ensure user is set in appState. This should be handled by main.js's onAuthStateChange.
+        if (!appState.user) { 
+            console.warn("[STATE.JS] appState.user is not set at the start of loadInitialAppState. This might indicate an issue in main.js or auth flow.");
+            // Attempt to get user directly if not set, though main.js should ideally do this.
+            const { data: { user: authUser }, error: getUserError } = await supabase.auth.getUser();
+            if (getUserError) {
+                console.error("[STATE.JS] Error calling supabase.auth.getUser():", getUserError);
+                throw new Error(`Failed to get user: ${getUserError.message}`);
             }
-
-        } catch (error) {
-            console.error("[STATE.JS] Error during materials query execution or timeout:", error);
-            throw error; // Propagate the error
+            if (!authUser) {
+                console.error("[STATE.JS] supabase.auth.getUser() returned no user.");
+                throw new Error("User not authenticated for loading state (checked directly).");
+            }
+            appState.user = authUser;
+            console.log("[STATE.JS] User fetched and set directly in loadInitialAppState:", appState.user.email);
+        } else {
+            console.log("[STATE.JS] User already set in appState:", appState.user.email);
         }
 
+        console.log(`[STATE.JS] Preparing to fetch materials ONLY (SIMPLIFIED)...`);
+        
         let actualMaterialsData = null;
-        // Now, interpret the rawMaterialsResponse
+        const materialsQuery = supabase
+            .from('materials')
+            .select('*')
+            .order('name', { ascending: true });
+            
+        console.log("[STATE.JS] Executing materials query (SIMPLIFIED)...");
+        const rawMaterialsResponse = await robustFetchWithTimeout(materialsQuery, FETCH_TIMEOUT_MS, "Fetching materials (SIMPLIFIED)");
+        
+        console.log("[STATE.JS] RAW RESPONSE from materials query (SIMPLIFIED):", JSON.stringify(rawMaterialsResponse)); // Stringify to see full structure if complex
+
         if (rawMaterialsResponse && rawMaterialsResponse.error) {
-            console.error("[STATE.JS] Supabase returned an error for materials:", rawMaterialsResponse.error);
+            console.error("[STATE.JS] Supabase explicitly returned an error for materials (SIMPLIFIED):", rawMaterialsResponse.error);
             throw new Error(`Supabase error fetching materials: ${rawMaterialsResponse.error.message || JSON.stringify(rawMaterialsResponse.error)}`);
-        } else if (rawMaterialsResponse && rawMaterialsResponse.data !== undefined) {
+        } else if (rawMaterialsResponse && rawMaterialsResponse.data !== undefined && rawMaterialsResponse.data !== null) {
             actualMaterialsData = rawMaterialsResponse.data;
-            console.log("[STATE.JS] Materials data successfully extracted from response.");
+            console.log("[STATE.JS] Materials data successfully extracted (SIMPLIFIED).");
         } else {
-            console.warn("[STATE.JS] Unexpected structure or null/undefined from materials query. Treating as no data.");
+            // This case means the query completed without a Supabase error object, but the .data field isn't there or is null.
+            // This could happen if the timeout occurred and robustFetchWithTimeout threw, which would be caught by the outer catch.
+            // Or if the Supabase client returned an unexpected valid (non-error) response.
+            console.warn("[STATE.JS] Materials query completed but response.data is undefined or null. Treating as no data. Raw response logged above.");
             actualMaterialsData = []; 
         }
        
-        console.log(`[STATE.JS] Fetched ${actualMaterialsData ? actualMaterialsData.length : 'null/undefined'} materials from DB (after interpretation).`);
-
-        if (actualMaterialsData && actualMaterialsData.length === 0 && MATERIALS_CONFIG.length > 0) {
-            console.log('[STATE.JS] No materials interpreted from DB response. Attempting to seed...');
-            const materialsToInsert = MATERIALS_CONFIG.map(m => ({ name: m.name, unit: m.unit, current_stock: m.currentStock, reorder_point: m.reorderPoint }));
-            console.log("[STATE.JS] Materials to insert:", materialsToInsert.length, "items.");
-
-            const insertQuery = supabase.from('materials').insert(materialsToInsert).select();
-            const insertResponse = await robustFetchWithTimeout(insertQuery, FETCH_TIMEOUT_MS, "Inserting materials");
-
-            if (insertResponse.error) {
-                console.error("[STATE.JS] Supabase insert error for materials:", insertResponse.error);
-                throw new Error(`Failed to seed materials: ${insertResponse.error.message || JSON.stringify(insertResponse.error)}`);
-            }
-            actualMaterialsData = insertResponse.data || [];
-            console.log(`[STATE.JS] ${actualMaterialsData.length} materials seeded successfully.`);
-        }
-        appState.materials = actualMaterialsData.map(dbMaterialToAppMaterial);
-
-        // Fetch production log (apply similar raw logging if issues persist here too)
-        console.log("[STATE.JS] Fetching production log...");
-        const productionLogQuery = supabase.from('production_log').select('*').order('produced_at', { ascending: false }).limit(100);
-        const productionLogResponse = await robustFetchWithTimeout(productionLogQuery, FETCH_TIMEOUT_MS, "Fetching production log");
+        console.log(`[STATE.JS] Interpreted ${actualMaterialsData ? actualMaterialsData.length : 'null/undefined'} materials from DB (SIMPLIFIED).`);
         
-        if (productionLogResponse.error) {
-            console.error("[STATE.JS] Supabase error fetching production_log:", productionLogResponse.error);
-            throw new Error(`Supabase error fetching production log: ${productionLogResponse.error.message || JSON.stringify(productionLogResponse.error)}`);
-        }
-        appState.productionLog = (productionLogResponse.data || []).map(log => ({ id: log.id, productName: log.product_name, quantity: log.quantity, date: log.produced_at, user_id: log.user_id }));
-        console.log(`[STATE.JS] Fetched ${appState.productionLog.length} production log entries.`);
+        // Filter out any nulls that might have resulted from dbMaterialToAppMaterial if a material record was bad
+        appState.materials = (actualMaterialsData || []).map(dbMaterialToAppMaterial).filter(m => m !== null);
         
-        console.log('[STATE.JS] loadInitialAppState END - SUCCESS');
+        // For this simplified test, we assume materials either exist or we don't try to seed.
+        // The goal is to see if the SELECT itself times out.
+        console.log('[STATE.JS] SIMPLIFIED: Not attempting to seed materials in this test version.');
+        console.log('[STATE.JS] SIMPLIFIED: Not fetching production log in this test version.');
+        appState.productionLog = []; // Explicitly set to empty for this test.
+        
+        console.log('[STATE.JS] loadInitialAppState END - SUCCESS (SIMPLIFIED)');
         return true;
 
     } catch (error) {
-        console.error('[STATE.JS] loadInitialAppState END - FAILED:', error.message, error.stack);
+        // This catch block handles errors from robustFetchWithTimeout (including timeouts) 
+        // or any other error thrown within the try block.
+        console.error('[STATE.JS] loadInitialAppState END - FAILED (SIMPLIFIED):', error.message, error.stack);
         return false; 
     }
 }

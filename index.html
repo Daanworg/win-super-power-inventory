@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Win Super Power - Factory Dashboard</title>
-    <!-- <script src="https://cdn.tailwindcss.com"></script> REMOVE IF USING LOCAL BUILD -->
+    <!-- RE-ADDED TAILWIND CDN FOR TESTING -->
+    <script src="https://cdn.tailwindcss.com"></script> 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="style.css"> <!-- Or output.css if using Tailwind build -->
+    <link rel="stylesheet" href="style.css"> <!-- Your custom styles -->
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="header fixed top-0 left-0 right-0 z-20 border-b"> <!-- Increased z-index for header -->
+    <header class="header fixed top-0 left-0 right-0 z-20 border-b"> 
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <h1 class="text-xl font-bold text-primary flex items-center"><i class="fas fa-satellite-dish mr-2 text-accent-blue"></i>Win Super Power</h1>
             <div class="flex items-center gap-4">
@@ -48,7 +49,7 @@
     </div>
 
     <!-- Loader element -->
-    <div id="loader" class="fixed inset-0 bg-bg-dark flex-col items-center justify-center z-40 hidden"> <!-- z-index lower than login -->
+    <div id="loader" class="fixed inset-0 bg-bg-dark flex-col items-center justify-center z-40 hidden">
         <div class="loader-spinner"></div>
         <p class="text-secondary mt-4">Loading Factory Data...</p>
     </div>
@@ -108,7 +109,7 @@
     </main>
 
     <!-- Footer -->
-    <footer id="footer" class="py-4 hidden"> <!-- Initially hidden -->
+    <footer id="footer" class="py-4 hidden"> 
         <div class="container mx-auto px-4 flex justify-center">
              <button id="show-reset-modal-btn" class="btn btn-danger text-sm">
                 <i class="fas fa-redo mr-1"></i> Reset All Data
@@ -121,7 +122,7 @@
     <div id="reports-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
     <div id="custom-po-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
     
-    <div id="toast-container"></div> <!-- Ensure z-index is high if modals are high -->
+    <div id="toast-container"></div>
     <script src="main.js" type="module"></script>
 </body>
 </html>

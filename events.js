@@ -1,23 +1,23 @@
-// events.js - Manages all event listeners (vFinal - Receives login handler)
+// events.js - Manages all event listeners (vFinal - Polished)
 
 import { appState } from './state.js';
 import { handleUpdateStock, handleRestock, handleSetStock } from './services.js';
 import { refreshUI, showToast, renderReport, renderCustomPOModal } from './ui.js';
 import { generatePurchaseOrder } from './purchaseOrderService.js';
 import { supabase } from './supabaseClient.js';
-// REMOVED: import { handleLoginSubmit } from './main.js'; // No longer needed here, it's passed as an argument
+import { handleError } from './errorService.js';
 
+// This function is called by refreshUI in ui.js to re-attach listeners to dynamic elements
 export function attachAllListeners() {
-    // console.log("[EVENTS.JS] attachAllListeners called.");
     attachProductInputListeners();
     attachCurrentStockEditListeners();
     attachRestockListeners();
     attachPurchaseOrderListener(); 
 }
 
-export function attachOneTimeListeners(loginSubmitHandlerCallback) { // Parameter name changed for clarity
-    console.log("[EVENTS.JS] attachOneTimeListeners called, received loginSubmitHandlerCallback:", typeof loginSubmitHandlerCallback);
-    attachAuthListeners(loginSubmitHandlerCallback); // Pass the handler
+// This function is called once by main.js on DOMContentLoaded for static elements
+export function attachOneTimeListeners(loginSubmitHandlerCallback) { 
+    attachAuthListeners(loginSubmitHandlerCallback);
     attachModalListeners();
 }
 
@@ -122,8 +122,7 @@ function attachPurchaseOrderListener() {
         reorderHeader.dataset.poListenerAttached = 'true';
         reorderHeader.addEventListener('click', (e) => {
             if (e.target.id === 'open-po-modal-btn' || e.target.closest('#open-po-modal-btn')) {
-                console.log("[EVENTS.JS] Create Purchase Order button clicked.");
-                const itemsToReorder = appState.materials.filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0) * 1.5);
+                const itemsToReorder = (appState.materials || []).filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0) * 1.5);
                 if (itemsToReorder.length > 0) renderCustomPOModal(itemsToReorder);
                 else showToast('No items currently need reordering.', 'info');
             }
@@ -131,7 +130,7 @@ function attachPurchaseOrderListener() {
     }
 }
 
-function attachAuthListeners(loginSubmitHandler) { // Accepts the handler
+function attachAuthListeners(loginSubmitHandler) { 
     const loginForm = document.getElementById('login-form');
     const logoutBtn = document.getElementById('logout-btn');
 
@@ -139,33 +138,24 @@ function attachAuthListeners(loginSubmitHandler) { // Accepts the handler
         loginForm.dataset.authListener = 'true';
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log("[EVENTS.JS] Login form submitted.");
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             if (emailInput && passwordInput && typeof loginSubmitHandler === 'function') {
                 await loginSubmitHandler(emailInput.value, passwordInput.value); 
             } else {
-                console.error("[EVENTS.JS] Email/password input not found or loginSubmitHandler not a function. Handler type:", typeof loginSubmitHandler);
-                showToast("Login system error. Please contact support.", "error");
+                handleError(new Error("Login form handler not configured correctly."), "login_handler_missing");
             }
         });
-        console.log("[EVENTS.JS] Login form listener attached.");
     }
 
     if (logoutBtn && !logoutBtn.dataset.authListener) {
         logoutBtn.dataset.authListener = 'true';
         logoutBtn.addEventListener('click', async () => {
-            console.log("[EVENTS.JS] Logout button clicked.");
-            // isHandlingAuthChange = true; // This flag is in main.js, events.js should not manage it.
             const { error } = await supabase.auth.signOut();
             if (error) {
-                console.error("[EVENTS.JS] Error signing out:", error);
-                showToast(`Logout error: ${error.message}`, 'error');
-                // isHandlingAuthChange = false; 
+                handleError(error, "logout_failed_events_js");
             }
-            // onAuthStateChange in main.js will handle UI changes and reset isHandlingAuthChange
         });
-        console.log("[EVENTS.JS] Logout button listener attached.");
     }
 }
 
@@ -194,11 +184,10 @@ function attachModalListeners() {
                     }
                     const { error: logDelError } = await supabase.from('production_log').delete().eq('user_id', appState.user.id);
                     if (logDelError) throw logDelError;
-                    showToast('User production log cleared. Please refresh if needed.', 'success');
+                    showToast('User production log cleared. Please refresh.', 'success');
                     window.location.reload(); 
                 } catch (error) {
-                    console.error("Error during data reset:", error);
-                    showToast(`Reset failed: ${error.message}`, 'error');
+                    handleError(error, "data_reset_failed");
                 } finally {
                     resetModal.classList.add('hidden');
                 }

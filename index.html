@@ -1,25 +1,24 @@
-<!-- index.html (Correct <head> section) -->
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Win Super Power - Factory Dashboard</title>
     
-    <!-- This links to your newly generated CSS file -->
+    <!-- Link to your locally built and minified Tailwind CSS file -->
     <link rel="stylesheet" href="./output.css">
     
-    <!-- Other links remain -->
+    <!-- Other external libraries and fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="/favicon.ico" type="image/x-icon">
 
-    <!-- JS Libraries -->
+    <!-- JavaScript libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen bg-bg-dark text-text-primary">
     <!-- Header -->
     <header class="header fixed top-0 left-0 right-0 z-20 border-b"> 
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
@@ -62,8 +61,10 @@
 
     <!-- Main Content (Initially Hidden and transparent) -->
     <main id="main-content" class="container mx-auto px-4 pt-20 pb-8 opacity-0 transition-opacity duration-500 hidden">
-        <!-- All sub-content divs remain the same -->
+        <!-- KPI Row -->
         <div id="kpi-row" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"></div>
+
+        <!-- Chart Row -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
             <div class="lg:col-span-3 dashboard-card p-6">
                 <h2 class="text-lg font-semibold mb-4">Production History (Last 7 Days)</h2>
@@ -78,12 +79,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- Main Data Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1"><div class="dashboard-card p-6 h-full"><h2 class="text-lg font-semibold mb-4">Production Input</h2><div id="product-cards" class="space-y-4"></div></div></div>
-            <div class="lg:col-span-1"><div class="dashboard-card p-6 flex flex-col h-full"><h2 class="text-lg font-semibold mb-4">Material Inventory</h2><div id="material-cards" class="grid grid-cols-1 gap-4 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></div></div></div>
-            <div class="lg:col-span-1"><div class="dashboard-card p-6 flex flex-col h-full"><h2 class="text-lg font-semibold mb-4">Production Log</h2><ul id="production-log-list" class="space-y-3 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></ul></div></div>
+            <div class="lg:col-span-1">
+                <div class="dashboard-card p-6 h-full">
+                    <h2 class="text-lg font-semibold mb-4">Production Input</h2>
+                    <div id="product-cards" class="space-y-4"></div>
+                </div>
+            </div>
+            <div class="lg:col-span-1">
+                <div class="dashboard-card p-6 flex flex-col h-full">
+                    <h2 class="text-lg font-semibold mb-4">Material Inventory</h2>
+                    <div id="material-cards" class="grid grid-cols-1 gap-4 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></div>
+                </div>
+            </div>
+            <div class="lg:col-span-1">
+                 <div class="dashboard-card p-6 flex flex-col h-full">
+                    <h2 class="text-lg font-semibold mb-4">Production Log</h2>
+                    <ul id="production-log-list" class="space-y-3 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></ul>
+                </div>
+            </div>
         </div>
-        <div class="mt-6"><div class="dashboard-card p-6"><div id="reorder-header" class="flex justify-between items-center mb-4"><h2 class="text-lg font-semibold">Re-order List</h2></div><ul id="reorder-list" class="space-y-3 overflow-y-auto pr-2" style="max-height: 250px;"></ul></div></div>
+        
+        <!-- Re-order List -->
+        <div class="mt-6">
+            <div class="dashboard-card p-6">
+                <div id="reorder-header" class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold">Re-order List</h2>
+                </div>
+                <ul id="reorder-list" class="space-y-3 overflow-y-auto pr-2" style="max-height: 250px;"></ul>
+            </div>
+        </div>
     </main>
 
     <!-- Footer -->

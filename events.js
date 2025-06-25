@@ -5,7 +5,7 @@ import { handleUpdateStock, handleRestock, handleSetStock } from './services.js'
 import { refreshUI, showToast, renderReport, renderCustomPOModal } from './ui.js';
 import { generatePurchaseOrder } from './purchaseOrderService.js';
 import { supabase } from './supabaseClient.js';
-// Removed: import { handleLoginSubmit } from './main.js'; // No longer needed here
+// Removed: import { handleLoginSubmit } from './main.js'; // This was the source of the error
 
 // This function is called by refreshUI in ui.js to re-attach listeners to dynamic elements
 export function attachAllListeners() {
@@ -13,13 +13,13 @@ export function attachAllListeners() {
     attachProductInputListeners();
     attachCurrentStockEditListeners();
     attachRestockListeners();
-    attachPurchaseOrderListener();
+    attachPurchaseOrderListener(); 
 }
 
 // This function is called once by main.js on DOMContentLoaded for static elements
 // It now ACCEPTS the login submit handler from main.js
 export function attachOneTimeListeners(loginSubmitHandler) {
-    console.log("[EVENTS.JS] attachOneTimeListeners called.");
+    console.log("[EVENTS.JS] attachOneTimeListeners called, received loginSubmitHandler:", typeof loginSubmitHandler);
     attachAuthListeners(loginSubmitHandler); // Pass the handler
     attachModalListeners();
 }
@@ -51,7 +51,10 @@ function attachCurrentStockEditListeners() {
             if (!card) return;
             const valueDiv = card.querySelector('.current-stock-value');
             const materialName = card.dataset.materialName;
-            if (!valueDiv || !materialName) return;
+            if (!valueDiv || !materialName) {
+                console.error("[EVENTS.JS] Could not find valueDiv or materialName for stock edit.");
+                return;
+            }
 
             const currentInput = card.querySelector('input.inline-edit-stock');
             if (currentInput) return; 
@@ -64,11 +67,14 @@ function attachCurrentStockEditListeners() {
             input.focus();
             input.select();
 
-            const saveChange = async () => await handleSetStock(materialName, parseInt(input.value, 10));
+            const saveChange = async () => {
+                const newValue = parseInt(input.value, 10);
+                await handleSetStock(materialName, newValue); 
+            };
             const handleKeyDown = (event) => {
                 if (event.key === 'Enter') input.blur();
                 else if (event.key === 'Escape') {
-                    input.replaceWith(valueDiv); // Revert
+                    input.replaceWith(valueDiv); 
                 }
             };
             input.addEventListener('blur', saveChange, { once: true });
@@ -118,20 +124,20 @@ function attachRestockListeners() {
 
 function attachPurchaseOrderListener() {
     const reorderHeader = document.getElementById('reorder-header');
-    if (reorderHeader && !reorderHeader.dataset.poListenerAttached) {
+    if (reorderHeader && !reorderHeader.dataset.poListenerAttached) { 
         reorderHeader.dataset.poListenerAttached = 'true';
         reorderHeader.addEventListener('click', (e) => {
             if (e.target.id === 'open-po-modal-btn' || e.target.closest('#open-po-modal-btn')) {
-                const materialsToOrder = appState.materials.filter(m => m.currentStock <= m.reorderPoint * 1.5);
-                if (materialsToOrder.length > 0) renderCustomPOModal(materialsToOrder);
+                console.log("[EVENTS.JS] Create Purchase Order button clicked.");
+                const itemsToReorder = appState.materials.filter(m => (m.currentStock || 0) <= (m.reorderPoint || 0) * 1.5);
+                if (itemsToReorder.length > 0) renderCustomPOModal(itemsToReorder);
                 else showToast('No items currently need reordering.', 'info');
             }
         });
     }
 }
 
-// Accepts the loginSubmitHandler from main.js
-function attachAuthListeners(loginSubmitHandler) {
+function attachAuthListeners(loginSubmitHandler) { // Accepts the handler
     const loginForm = document.getElementById('login-form');
     const logoutBtn = document.getElementById('logout-btn');
 
@@ -145,7 +151,8 @@ function attachAuthListeners(loginSubmitHandler) {
             if (emailInput && passwordInput && typeof loginSubmitHandler === 'function') {
                 await loginSubmitHandler(emailInput.value, passwordInput.value); 
             } else {
-                console.error("[EVENTS.JS] Email/password input not found or loginSubmitHandler not a function.");
+                console.error("[EVENTS.JS] Email/password input not found or loginSubmitHandler not a function. Handler type:", typeof loginSubmitHandler);
+                showToast("Login system error. Please contact support.", "error");
             }
         });
         console.log("[EVENTS.JS] Login form listener attached.");
@@ -155,11 +162,14 @@ function attachAuthListeners(loginSubmitHandler) {
         logoutBtn.dataset.authListener = 'true';
         logoutBtn.addEventListener('click', async () => {
             console.log("[EVENTS.JS] Logout button clicked.");
+            isHandlingAuthChange = true; // Set flag before calling signOut
             const { error } = await supabase.auth.signOut();
             if (error) {
                 console.error("[EVENTS.JS] Error signing out:", error);
                 showToast(`Logout error: ${error.message}`, 'error');
+                isHandlingAuthChange = false; // Reset on error if signOut doesn't trigger event
             }
+            // onAuthStateChange in main.js will handle UI changes and reset isHandlingAuthChange
         });
         console.log("[EVENTS.JS] Logout button listener attached.");
     }
@@ -173,20 +183,25 @@ function attachModalListeners() {
     const showResetBtn = document.getElementById('show-reset-modal-btn');
     if (showResetBtn && !showResetBtn.dataset.modalListener) {
         showResetBtn.dataset.modalListener = 'true';
-        showResetBtn.addEventListener('click', () => resetModal.classList.remove('hidden'));
+        showResetBtn.addEventListener('click', () => { if(resetModal) resetModal.classList.remove('hidden'); });
     }
-    if (resetModal && !resetModal.dataset.modalListener) {
-        resetModal.dataset.modalListener = 'true';
+    if (resetModal && !resetModal.dataset.modalListenerInteraction) { // Different dataset attr for interaction
+        resetModal.dataset.modalListenerInteraction = 'true';
         resetModal.addEventListener('click', async (e) => {
             if (e.target.id === 'cancel-reset-btn' || e.target === resetModal || e.target.closest('#cancel-reset-btn')) {
                 resetModal.classList.add('hidden');
             } else if (e.target.id === 'confirm-reset-btn' || e.target.closest('#confirm-reset-btn')) {
-                showToast('Resetting user production log... Full material reset requires DB admin.', 'info');
+                showToast('Resetting user production log...', 'info');
                 try {
+                    if (!appState.user || !appState.user.id) {
+                        showToast('Cannot reset log: User not identified.', 'error');
+                        resetModal.classList.add('hidden');
+                        return;
+                    }
                     const { error: logDelError } = await supabase.from('production_log').delete().eq('user_id', appState.user.id);
                     if (logDelError) throw logDelError;
                     showToast('User production log cleared. Please refresh if needed.', 'success');
-                    window.location.reload(); // Reload to fetch fresh state
+                    window.location.reload(); 
                 } catch (error) {
                     console.error("Error during data reset:", error);
                     showToast(`Reset failed: ${error.message}`, 'error');
@@ -200,10 +215,10 @@ function attachModalListeners() {
     const showReportsBtn = document.getElementById('show-reports-modal-btn');
     if (showReportsBtn && !showReportsBtn.dataset.modalListener) {
         showReportsBtn.dataset.modalListener = 'true';
-        showReportsBtn.addEventListener('click', () => reportsModal.classList.remove('hidden'));
+        showReportsBtn.addEventListener('click', () => { if(reportsModal) reportsModal.classList.remove('hidden'); });
     }
-    if (reportsModal && !reportsModal.dataset.modalListener) {
-        reportsModal.dataset.modalListener = 'true';
+    if (reportsModal && !reportsModal.dataset.modalListenerInteraction) {
+        reportsModal.dataset.modalListenerInteraction = 'true';
         reportsModal.addEventListener('click', (e) => {
             if (e.target.id === 'close-reports-modal-btn' || e.target === reportsModal || e.target.closest('#close-reports-modal-btn')) {
                 reportsModal.classList.add('hidden');
@@ -212,8 +227,8 @@ function attachModalListeners() {
         });
     }
 
-    if (customPOModal && !customPOModal.dataset.modalListener) {
-        customPOModal.dataset.modalListener = 'true';
+    if (customPOModal && !customPOModal.dataset.modalListenerInteraction) {
+        customPOModal.dataset.modalListenerInteraction = 'true';
         customPOModal.addEventListener('click', e => {
             if (e.target.id === 'custom-po-modal' || e.target.closest('#cancel-po-btn') || e.target.id === 'cancel-po-btn-footer' || e.target.closest('#cancel-po-btn-footer')) {
                 customPOModal.classList.add('hidden');

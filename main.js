@@ -1,11 +1,11 @@
-// main.js - Application Entry Point (vFinal - Login and Refresh Fix)
+// main.js - Application Entry Point (Final Polished Version)
 
 import { loadInitialAppState, appState } from './state.js';
 import { refreshUI, showToast } from './ui.js'; 
 import { attachOneTimeListeners } from './events.js';
 import { supabase } from './supabaseClient.js';
+import { handleError } from './errorService.js';
 
-// UI Elements
 const loginScreen = document.getElementById('login-screen');
 const mainContent = document.getElementById('main-content');
 const loader = document.getElementById('loader');
@@ -15,47 +15,41 @@ const logoutBtn = document.getElementById('logout-btn');
 const reportsBtn = document.getElementById('show-reports-modal-btn');
 const footer = document.getElementById('footer');
 
-let isHandlingAuthChange = false;
+let isProcessingAuthEvent = false;
 
-// This function is defined here and passed to events.js to handle form submission
-async function handleLoginSubmit(email, password) {
-    console.log("[MAIN.JS] handleLoginSubmit called.");
+// This function is now simplified, it just triggers the Supabase client.
+export async function handleLoginSubmit(email, password) {
+    console.log("[MAIN.JS] Login attempt initiated.");
+    loader.classList.remove('hidden');
+    loader.classList.add('flex');
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+        handleError(error, "login_failed");
+        loader.classList.add('hidden');
+        loader.classList.remove('flex');
+        loginScreen.classList.remove('hidden');
+    }
+    // On success, onAuthStateChange('SIGNED_IN') will take over.
+}
+
+// Unified function to load the application for any authenticated state.
+async function loadApplication(session) {
+    if (!session || !session.user) {
+        handleError(new Error("Cannot load application without a valid session."), "load_app_no_session");
+        return;
+    }
+    
+    appState.user = session.user;
+    console.log(`[MAIN.JS] Authenticated. Proceeding to load data for: ${appState.user.email}`);
+
     loginScreen.classList.add('hidden');
+    mainContent.classList.add('hidden');
+    mainContent.classList.add('opacity-0');
     loader.classList.remove('hidden');
     loader.classList.add('flex');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-        console.error('[MAIN.JS] Login Failed:', error);
-        showToast(`Login failed: ${error.message}`, 'error');
-        loginScreen.classList.remove('hidden');
-        loader.classList.add('hidden');
-        loader.classList.remove('flex');
-    }
-    // On success, the onAuthStateChange listener will handle everything else.
-}
-
-async function processAuthenticatedSession(sessionUser, eventType) {
-    if (isHandlingAuthChange) {
-        console.log(`[MAIN.JS] processAuthenticatedSession skipped for ${eventType} due to active handling.`);
-        return;
-    }
-    isHandlingAuthChange = true;
-
     try {
-        console.log(`[MAIN.JS] User identified via ${eventType}. Proceeding to load data for:`, sessionUser.email);
-        appState.user = sessionUser;
-
-        loginScreen.classList.add('hidden');
-        mainContent.classList.add('hidden');
-        mainContent.classList.add('opacity-0');
-        loader.classList.remove('hidden');
-        loader.classList.add('flex');
-
         const loadedSuccessfully = await loadInitialAppState();
-        console.log(`[MAIN.JS] loadInitialAppState() completed. Returned: ${loadedSuccessfully}`);
-
         if (loadedSuccessfully) {
             refreshUI();
             mainContent.classList.remove('hidden');
@@ -66,75 +60,62 @@ async function processAuthenticatedSession(sessionUser, eventType) {
             userEmailSpan.textContent = appState.user.email;
             setTimeout(() => mainContent.classList.remove('opacity-0'), 50);
         } else {
-            showToast('Failed to load factory data. Please try again.', 'error');
+            // loadInitialAppState now handles its own error toasts.
+            // If it returns false, it means we have a non-recoverable state, so sign out.
+            console.error("[MAIN.JS] loadInitialAppState returned false. Forcing sign out.");
             await supabase.auth.signOut();
         }
     } catch (error) {
-        console.error(`[MAIN.JS] Critical error during ${eventType} handling:`, error);
-        showToast(`Critical error: ${error.message}. Please check console.`, 'error');
+        handleError(error, "load_application_critical");
+        await supabase.auth.signOut();
     } finally {
         loader.classList.add('hidden');
         loader.classList.remove('flex');
-        isHandlingAuthChange = false;
-        console.log(`[MAIN.JS] Finished processing ${eventType}.`);
     }
 }
 
 supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log(`[MAIN.JS] Auth event: ${event}`);
+    console.log(`[MAIN.JS] Auth event received: ${event}`);
 
-    switch (event) {
-        case 'SIGNED_IN':
-            await processAuthenticatedSession(session.user, 'SIGNED_IN');
-            break;
+    // If an auth event is already being processed, ignore subsequent rapid-fire events.
+    if (isProcessingAuthEvent) {
+        console.log(`[MAIN.JS] Skipping event (${event}) as another is in progress.`);
+        return;
+    }
+    isProcessingAuthEvent = true;
 
-        case 'INITIAL_SESSION':
-            if (session) {
-                console.log("[MAIN.JS] INITIAL_SESSION: Refreshing token first.");
-                const { error } = await supabase.auth.refreshSession();
-                if (error) {
-                    console.error("[MAIN.JS] Token refresh failed:", error.message);
-                    await supabase.auth.signOut();
-                } else {
-                    console.log("[MAIN.JS] Token refresh successful. The next auth event (TOKEN_REFRESHED or SIGNED_IN) will handle data loading.");
-                }
-            } else {
-                console.log("[MAIN.JS] INITIAL_SESSION: No session found. Showing login screen.");
-                loginScreen.classList.remove('hidden');
-            }
-            break;
-        
-        case 'TOKEN_REFRESHED':
-            if(session){
-                await processAuthenticatedSession(session.user, 'TOKEN_REFRESHED');
-            }
-            break;
+    try {
+        // Unify the logic for all events that result in an authenticated user.
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') && session?.user) {
+            
+            // Introduce a small delay to allow the Supabase client to stabilize,
+            // especially after INITIAL_SESSION or a rapid SIGNED_IN.
+            // This is a pragmatic fix for the intermittent timeout race condition.
+            await new Promise(resolve => setTimeout(resolve, 150)); 
+            
+            await loadApplication(session);
 
-        case 'SIGNED_OUT':
-            console.log("[MAIN.JS] User signed out.");
+        } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+            console.log(`[MAIN.JS] User signed out or deleted.`);
             appState.user = null; appState.materials = []; appState.productionLog = [];
             appState.dataLoaded = false; appState.lastLoadedUserId = null;
             sessionStorage.removeItem('appStateCache');
 
-            mainContent.classList.add('hidden');
-            mainContent.classList.add('opacity-0');
-            footer.classList.add('hidden');
-            userInfo.classList.add('hidden');
-            logoutBtn.classList.add('hidden');
-            reportsBtn.classList.add('hidden');
-            loader.classList.add('hidden');
-            loader.classList.remove('flex');
+            mainContent.classList.add('hidden'); mainContent.classList.add('opacity-0');
+            footer.classList.add('hidden'); userInfo.classList.add('hidden');
+            logoutBtn.classList.add('hidden'); reportsBtn.classList.add('hidden');
+            loader.classList.add('hidden'); loader.classList.remove('flex');
             loginScreen.classList.remove('hidden');
-            break;
 
-        case 'USER_DELETED':
-             console.log("[MAIN.JS] User deleted. Cleaning up.");
-             // Same as SIGNED_OUT
-             appState.user = null; appState.materials = []; appState.productionLog = [];
-             sessionStorage.removeItem('appStateCache');
-             // Refresh to a clean state
-             window.location.reload();
-             break;
+        } else if (event === 'INITIAL_SESSION' && !session) {
+            console.log("[MAIN.JS] Initial check: No active session found.");
+            loginScreen.classList.remove('hidden');
+        } else {
+            console.log(`[MAIN.JS] Unhandled auth event state: ${event}`);
+        }
+    } finally {
+        isProcessingAuthEvent = false;
+        // console.log(`[MAIN.JS] Finished processing auth event: ${event}. Flag reset.`);
     }
 });
 

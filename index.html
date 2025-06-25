@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Win Super Power - Factory Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> REMOVE IF USING LOCAL BUILD -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PDF & Charting Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"> <!-- Or output.css if using Tailwind build -->
 </head>
 <body class="flex flex-col min-h-screen">
     <!-- Header -->
-    <header class="header fixed top-0 left-0 right-0 z-10 border-b">
+    <header class="header fixed top-0 left-0 right-0 z-20 border-b"> <!-- Increased z-index for header -->
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-primary flex items-center"><i class="fas fa-satellite-dish mr-2 text-accent-blue"></i>Win Super Power - Factory Dashboard</h1>
+            <h1 class="text-xl font-bold text-primary flex items-center"><i class="fas fa-satellite-dish mr-2 text-accent-blue"></i>Win Super Power</h1>
             <div class="flex items-center gap-4">
                 <div id="user-info" class="text-sm text-secondary hidden">
                     Logged in as: <span id="user-email" class="font-semibold text-primary"></span>
@@ -33,25 +32,31 @@
     <!-- Login Screen -->
     <div id="login-screen" class="fixed inset-0 bg-bg-dark flex items-center justify-center z-50">
         <div class="dashboard-card p-8 w-full max-w-sm">
-            <h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+            <h2 class="text-2xl font-bold text-center mb-6">Factory Dashboard Login</h2>
             <form id="login-form">
                 <div class="mb-4">
                     <label for="email" class="block text-sm font-medium text-secondary mb-1">Email</label>
-                    <input type="email" id="email" class="input-field w-full" required>
+                    <input type="email" id="email" class="input-field w-full" required autocomplete="email">
                 </div>
                 <div class="mb-6">
                     <label for="password" class="block text-sm font-medium text-secondary mb-1">Password</label>
-                    <input type="password" id="password" class="input-field w-full" required>
+                    <input type="password" id="password" class="input-field w-full" required autocomplete="current-password">
                 </div>
                 <button type="submit" class="btn btn-primary w-full">Sign In</button>
             </form>
         </div>
     </div>
 
-    <!-- Main Content (Initially Hidden) -->
+    <!-- Loader element -->
+    <div id="loader" class="fixed inset-0 bg-bg-dark flex-col items-center justify-center z-40 hidden"> <!-- z-index lower than login -->
+        <div class="loader-spinner"></div>
+        <p class="text-secondary mt-4">Loading Factory Data...</p>
+    </div>
+
+    <!-- Main Content (Initially Hidden and transparent) -->
     <main id="main-content" class="container mx-auto px-4 pt-20 pb-8 opacity-0 transition-opacity duration-500 hidden">
         <!-- KPI Row -->
-        <div id="kpi-row" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+        <div id="kpi-row" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"></div>
 
         <!-- Chart Row -->
         <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
@@ -71,20 +76,20 @@
 
         <!-- Main Data Row -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-1"> <!-- Production Input -->
-                <div class="dashboard-card p-6">
+            <div class="lg:col-span-1">
+                <div class="dashboard-card p-6 h-full">
                     <h2 class="text-lg font-semibold mb-4">Production Input</h2>
                     <div id="product-cards" class="space-y-4"></div>
                 </div>
             </div>
-            <div class="lg:col-span-1"> <!-- Material Inventory -->
-                <div class="dashboard-card p-6 flex flex-col">
+            <div class="lg:col-span-1">
+                <div class="dashboard-card p-6 flex flex-col h-full">
                     <h2 class="text-lg font-semibold mb-4">Material Inventory</h2>
                     <div id="material-cards" class="grid grid-cols-1 gap-4 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></div>
                 </div>
             </div>
-            <div class="lg:col-span-1"> <!-- Production Log -->
-                 <div class="dashboard-card p-6 flex flex-col">
+            <div class="lg:col-span-1">
+                 <div class="dashboard-card p-6 flex flex-col h-full">
                     <h2 class="text-lg font-semibold mb-4">Production Log</h2>
                     <ul id="production-log-list" class="space-y-3 overflow-y-auto pr-2 flex-grow" style="max-height: 500px;"></ul>
                 </div>
@@ -96,7 +101,6 @@
             <div class="dashboard-card p-6">
                 <div id="reorder-header" class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold">Re-order List</h2>
-                    <!-- Button will be inserted here by ui.js if needed -->
                 </div>
                 <ul id="reorder-list" class="space-y-3 overflow-y-auto pr-2" style="max-height: 250px;"></ul>
             </div>
@@ -104,7 +108,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="py-4">
+    <footer id="footer" class="py-4 hidden"> <!-- Initially hidden -->
         <div class="container mx-auto px-4 flex justify-center">
              <button id="show-reset-modal-btn" class="btn btn-danger text-sm">
                 <i class="fas fa-redo mr-1"></i> Reset All Data
@@ -117,8 +121,7 @@
     <div id="reports-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
     <div id="custom-po-modal" class="modal-backdrop fixed inset-0 flex items-center justify-center z-50 hidden"></div>
     
-    <div id="toast-container"></div>
-    <!-- Load main.js as module, it will import others -->
+    <div id="toast-container"></div> <!-- Ensure z-index is high if modals are high -->
     <script src="main.js" type="module"></script>
 </body>
 </html>

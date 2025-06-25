@@ -1,5 +1,23 @@
 // state.js - Manages Application State with Supabase (vFinal-RLS-Aware with TIMEOUT + RAW RESPONSE LOGGING)
+// At the top of state.js
+async function robustFetchWithTimeout(promise, ms, operationName = "Supabase Operation") {
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            console.warn(`[STATE.JS] ${operationName} TIMED OUT after ${ms/1000}s.`);
+            reject(new Error(`${operationName} timed out after ${ms / 1000} seconds`));
+        }, ms);
+    });
 
+    try {
+        const result = await Promise.race([promise, timeoutPromise]);
+        clearTimeout(timeoutId); 
+        return result;
+    } catch (error) {
+        clearTimeout(timeoutId); 
+        throw error; 
+    }
+}
 import { supabase } from './supabaseClient.js';
 import { MATERIALS_CONFIG, RECIPES_CONFIG } from './config.js';
 

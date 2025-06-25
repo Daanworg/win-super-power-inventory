@@ -1,12 +1,11 @@
-// main.js - Application Entry Point (vFinal with EXTREME Debugging)
+// main.js - Application Entry Point (vFinal with EXTREME Debugging + Session Refresh Attempt)
 
 import { loadInitialAppState, appState } from './state.js';
 import { refreshUI } from './ui.js';
 import { attachOneTimeListeners } from './events.js';
 import { supabase } from './supabaseClient.js';
-import { showToast } from './ui.js'; // Ensure showToast is imported
+import { showToast } from './ui.js'; 
 
-// UI Elements
 const loginScreen = document.getElementById('login-screen');
 const mainContent = document.getElementById('main-content');
 const loader = document.getElementById('loader');
@@ -21,9 +20,34 @@ console.log("[MAIN.JS] Script loaded. Setting up onAuthStateChange listener.");
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log(`[MAIN.JS] Auth event: ${event}`, session ? `User: ${session.user.email}` : "No session");
 
-    if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
-        appState.user = session.user;
-        console.log("[MAIN.JS] User identified:", appState.user.email);
+    if (event === 'INITIAL_SESSION' && session) {
+        console.log("[MAIN.JS] INITIAL_SESSION detected. Attempting to refresh session first...");
+        try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+                console.error("[MAIN.JS] Error refreshing session during INITIAL_SESSION:", refreshError);
+                // Decide how to handle this - maybe proceed anyway or sign out
+                // For now, let's log and proceed to see if loadInitialAppState still hangs
+            } else {
+                console.log("[MAIN.JS] Session refreshed successfully during INITIAL_SESSION. New session data:", refreshData.session);
+                // Update appState.user with the potentially new session user details
+                if (refreshData.session && refreshData.session.user) {
+                    appState.user = refreshData.session.user; 
+                } else {
+                    // If refreshSession somehow clears the session without error, handle it
+                    console.warn("[MAIN.JS] refreshSession returned no session. Signing out.");
+                    await supabase.auth.signOut();
+                    return; // Exit early as we will get a SIGNED_OUT event
+                }
+            }
+        } catch (e) {
+            console.error("[MAIN.JS] Exception during supabase.auth.refreshSession():", e);
+        }
+    }
+
+    if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && appState.user) { // Ensure appState.user is valid
+        // appState.user should have been set by SIGNED_IN or by the refreshSession block above for INITIAL_SESSION
+        console.log("[MAIN.JS] User identified (or session refreshed):", appState.user.email);
 
         console.log("[MAIN.JS] Hiding login screen, preparing to show loader.");
         loginScreen.classList.add('hidden');
@@ -37,7 +61,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         let loadedSuccessfully = false;
         try {
             console.log("[MAIN.JS] Attempting to call: await loadInitialAppState()");
-            loadedSuccessfully = await loadInitialAppState(); // This is the key call
+            loadedSuccessfully = await loadInitialAppState(); 
             console.log(`[MAIN.JS] loadInitialAppState() call completed. Returned: ${loadedSuccessfully}`);
             
             if (loadedSuccessfully) {
@@ -50,10 +74,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 userInfo.classList.remove('hidden');
                 logoutBtn.classList.remove('hidden');
                 reportsBtn.classList.remove('hidden');
-                if (userEmailSpan && session.user && session.user.email) {
-                   userEmailSpan.textContent = session.user.email;
+                if (userEmailSpan && appState.user && appState.user.email) { // Use appState.user here
+                   userEmailSpan.textContent = appState.user.email;
                 } else {
-                    console.warn("[MAIN.JS] userEmailSpan or session.user.email is null/undefined");
+                    console.warn("[MAIN.JS] userEmailSpan or appState.user.email is null/undefined");
                 }
                 
                 setTimeout(() => {
@@ -62,12 +86,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 }, 50);
             } else {
                 console.warn("[MAIN.JS] loadInitialAppState reported failure (returned false). Not refreshing UI or showing main content.");
-                // showToast might not be reliable if UI isn't fully ready, log instead
                 console.error('[MAIN.JS] Failed to load factory data (loaderSuccessfully is false).');
             }
         } catch (error) {
             console.error("[MAIN.JS] Critical error during app initialization in onAuthStateChange (try block):", error);
-            // showToast(`Critical error: ${error.message}. Check console.`, 'error');
         } finally {
             console.log("[MAIN.JS] Executing finally block: Attempting to hide loader.");
             loader.classList.add('hidden');
@@ -92,7 +114,15 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         loginScreen.classList.remove('hidden');
         console.log("[MAIN.JS] UI reset for signed out state.");
     } else {
-        console.log(`[MAIN.JS] Unhandled auth event: ${event}`);
+        // This will catch INITIAL_SESSION if session is null (no user logged in)
+        console.log(`[MAIN.JS] Unhandled or no-action-needed auth event: ${event}. Current session:`, session);
+        // If it's INITIAL_SESSION with no session, we typically do nothing and wait for login
+        // Or ensure the login screen is visible if it's not already.
+        if (event === 'INITIAL_SESSION' && !session) {
+            loginScreen.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            loader.classList.add('hidden');
+        }
     }
 });
 

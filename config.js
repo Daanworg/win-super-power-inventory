@@ -1,59 +1,60 @@
-// config.js - FACTORY CONFIGURATION FILE - v4.0 (Zero Initial Stock, No Max)
+// config.js - FACTORY CONFIGURATION FILE - vFinal (Zero Initial Stock, No Max, with updated_at placeholders for state.js)
 
 export const MATERIALS_CONFIG = [
-  // Frame Materials
-  { name: "5/32 x 3/4 Tube", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  { name: "1/8 x 1/2 Tube", unit: "pcs", currentStock: 0, reorderPoint: 500 },
-  { name: "1/8 x 3/4 Tube", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  { name: "End Knob Round", unit: "pcs", currentStock: 0, reorderPoint: 300 },
-  { name: "End Knob Square 1/2x1/2", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  { name: "Dipole (CI Cup)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "U-Clip", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "12cm Round Tube 7/8 MF", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  { name: "15cm Round Tube 5/8 MF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "5/8 x 4 CSK Screw", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  { name: "3/8 x 4 Screw", unit: "pcs", currentStock: 0, reorderPoint: 100 },
+  // Frame Materials - Added 'updated_at' for consistency with potential DB schema, though client doesn't set it.
+  // The actual 'updated_at' will come from Supabase.
+  { name: "5/32 x 3/4 Tube", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
+  { name: "1/8 x 1/2 Tube", unit: "pcs", currentStock: 0, reorderPoint: 500, updatedAt: null },
+  { name: "1/8 x 3/4 Tube", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
+  { name: "End Knob Round", unit: "pcs", currentStock: 0, reorderPoint: 300, updatedAt: null },
+  { name: "End Knob Square 1/2x1/2", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
+  { name: "Dipole (CI Cup)", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "U-Clip", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "12cm Round Tube 7/8 MF", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
+  { name: "15cm Round Tube 5/8 MF", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "5/8 x 4 CSK Screw", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
+  { name: "3/8 x 4 Screw", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
 
   // Wire/Connector Materials
-  { name: "16 1/2 Ygr Wire", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "F-Connector Male (4005)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
-  { name: "F-Connector Female (2002)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
+  { name: "16 1/2 Ygr Wire", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "F-Connector Male (4005)", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
+  { name: "F-Connector Female (2002)", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
 
   // Booster Materials
-  { name: "Macking Coil", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Coil 28gsm (25cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Coil 26gsm (16cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Coil 25gsm (36cm)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Resistor 1k", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "Resistor 100-ohm", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "Resistor 68k", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "Resistor 2k", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "Resistor 150-R", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "Resistor 10k", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "LED Multicolour", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "LED 5mm", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "PF 12", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "PF 39", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "PF 102 Indian", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "PF 102 Normal", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "Capacitor 25v 100uF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Capacitor 25v 220uF", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Transistor (2355)", unit: "pcs", currentStock: 0, reorderPoint: 100 },
+  { name: "Macking Coil", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Coil 28gsm (25cm)", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Coil 26gsm (16cm)", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Coil 25gsm (36cm)", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Resistor 1k", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "Resistor 100-ohm", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "Resistor 68k", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "Resistor 2k", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "Resistor 150-R", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "Resistor 10k", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "LED Multicolour", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "LED 5mm", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "PF 12", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "PF 39", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "PF 102 Indian", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "PF 102 Normal", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "Capacitor 25v 100uF", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Capacitor 25v 220uF", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Transistor (2355)", unit: "pcs", currentStock: 0, reorderPoint: 100, updatedAt: null },
   
   // Power Supply Materials
-  { name: "Plastic Box (Power)", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Transformer", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "IN4007 Diode", unit: "pcs", currentStock: 0, reorderPoint: 200 },
-  { name: "5C 2V Wire 3-yard", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "4-Antenna Jack", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "AC Cord", unit: "pcs", currentStock: 0, reorderPoint: 50 },
+  { name: "Plastic Box (Power)", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Transformer", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "IN4007 Diode", unit: "pcs", currentStock: 0, reorderPoint: 200, updatedAt: null },
+  { name: "5C 2V Wire 3-yard", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "4-Antenna Jack", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "AC Cord", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
 
   // Packing Materials
-  { name: "Packing Bag", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Warranty Card", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Round Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Box Plastic Cover", unit: "pcs", currentStock: 0, reorderPoint: 50 },
-  { name: "Box Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50 }
+  { name: "Packing Bag", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Warranty Card", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Round Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Box Plastic Cover", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null },
+  { name: "Box Sticker", unit: "pcs", currentStock: 0, reorderPoint: 50, updatedAt: null }
 ];
 
 const subAssemblyRecipes = {
